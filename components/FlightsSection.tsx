@@ -25,13 +25,16 @@ function Leg({ f, label }: { f?: Flight; label: string }) {
   );
 }
 
-export function FlightsSection({ flights, destination }: { flights: FlightPick[]; destination: string }) {
+export function FlightsSection({ flights, destination, highlightIds }: { flights: FlightPick[]; destination: string; highlightIds?: Set<string> }) {
   return (
     <section>
       <h3 className="mb-2 font-display text-xl">Flights</h3>
       <div className="divide-y divide-line rounded-2xl border border-line bg-white">
         {flights.map((p) => (
-          <div key={p.person} className="space-y-1 p-3">
+          <div
+            key={p.person}
+            className={`space-y-1 p-3 transition ${[p.out?.id, p.back?.id].some((id) => id && highlightIds?.has(id)) ? "animate-pulse bg-marigold-soft" : ""}`}
+          >
             <p className="text-sm">
               <span className="font-semibold">{p.person}</span>
               <span className="text-muted">

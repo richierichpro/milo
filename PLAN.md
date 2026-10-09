@@ -8,7 +8,7 @@
 - [x] 4 Grounded planner
 - [x] 5 Main screen  (STOP after this for my review)
 - [x] 6 Squad Match (hero)
-- [ ] 7 Chat edits
+- [x] 7 Chat edits
 - [ ] 8 Demo mode
 - [ ] 9 Polish and README
 

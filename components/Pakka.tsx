@@ -5,10 +5,12 @@ import { useCallback, useMemo, useState } from "react";
 import { DEMO_TRIP } from "@/lib/demo-trip";
 import type { StreamMessage } from "@/lib/messages";
 import { pointsFor, type MapPoint } from "@/lib/map-points";
+import { averageCost } from "@/lib/money";
 import { readNdjson } from "@/lib/ndjson";
+import type { CandidatePool } from "@/lib/gather";
 import type { CallLogEntry, DestinationOption, Itinerary, SquadMatch as Match, TripInput } from "@/lib/types";
 import { ArrivalTimeline } from "./ArrivalTimeline";
-import { ChatBox } from "./ChatBox";
+import { ChatBox, type ChatTurn } from "./ChatBox";
 import { CostSplit } from "./CostSplit";
 import { DayTimeline } from "./DayTimeline";
 import { FlightsSection } from "./FlightsSection";
@@ -31,6 +33,10 @@ export function Pakka() {
   const [error, setError] = useState<string>();
   const [itinerary, setItinerary] = useState<Itinerary>();
   const [, setReceipts] = useState<CallLogEntry[]>([]);
+  const [pool, setPool] = useState<CandidatePool>();
+  const [turns, setTurns] = useState<ChatTurn[]>([]);
+  const [chatting, setChatting] = useState(false);
+  const [highlight, setHighlight] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string>();
   const [match, setMatch] = useState<Match>();
 
@@ -51,6 +57,8 @@ export function Pakka() {
         } else if (msg.type === "plan") {
           setItinerary(msg.itinerary);
           setReceipts(msg.receipts);
+          setPool(msg.pool);
+          setTurns([]);
           setSelectedId(undefined);
         }
       });
@@ -60,6 +68,38 @@ export function Pakka() {
       setRunning(false);
     }
   }, []);
+
+  const chat = async (text: string) => {
+    if (!itinerary || !pool) return;
+    const before = itinerary;
+    setChatting(true);
+    setTurns((t) => [...t, { role: "user", text }, { role: "pakka", text: "", tools: ["Thinking…"], pending: true }]);
+    const updateLast = (f: (t: Extract<ChatTurn, { role: "pakka" }>) => Extract<ChatTurn, { role: "pakka" }>) =>
+      setTurns((ts) => ts.map((t, i) => (i === ts.length - 1 && t.role === "pakka" ? f(t) : t)));
+    try {
+      const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ itinerary, pool, message: text }) });
+      if (!res.ok && res.headers.get("content-type")?.includes("json")) throw new Error((await res.json()).error);
+      await readNdjson<StreamMessage>(res, (msg) => {
+        if (msg.type === "progress") updateLast((t) => ({ ...t, tools: [...t.tools.filter((x) => x !== "Thinking…"), msg.text] }));
+        else if (msg.type === "error") updateLast((t) => ({ ...t, text: msg.message, error: true, pending: false }));
+        else if (msg.type === "message") updateLast((t) => ({ ...t, text: msg.text, pending: false }));
+        else if (msg.type === "plan") {
+          setItinerary(msg.itinerary);
+          setPool(msg.pool);
+          setReceipts((r) => [...r, ...msg.receipts]);
+          updateLast((t) => ({ ...t, delta: averageCost(msg.itinerary.costs) - averageCost(before.costs) }));
+          const changed = changedIds(before, msg.itinerary);
+          setHighlight(changed);
+          setTimeout(() => setHighlight(new Set()), 3000);
+        }
+      });
+    } catch (err) {
+      updateLast((t) => ({ ...t, text: (err as Error).message, error: true }));
+    } finally {
+      updateLast((t) => ({ ...t, pending: false, tools: t.tools.filter((x) => x !== "Thinking…") }));
+      setChatting(false);
+    }
+  };
 
   const makePlan = () => {
     if (!trip.destination.trim()) setMatch(undefined);
@@ -84,7 +124,7 @@ export function Pakka() {
         <TripForm value={trip} onChange={setTrip} onSubmit={makePlan} busy={running} />
         <ProgressFeed lines={progress} running={running} />
         {error && <p className="rounded-2xl bg-coral/10 p-3 text-sm text-coral">{error}</p>}
-        {itinerary && <ChatBox disabled />}
+        {itinerary && <ChatBox turns={turns} busy={chatting || running} onSend={chat} />}
       </aside>
 
       <main className="space-y-6 p-5 lg:overflow-y-auto">
@@ -99,15 +139,16 @@ export function Pakka() {
               <WhatsAppButton itinerary={itinerary} />
             </PlanHeader>
             <ArrivalTimeline itinerary={itinerary} />
-            <FlightsSection flights={itinerary.flights} destination={itinerary.trip.destination} />
+            <FlightsSection flights={itinerary.flights} destination={itinerary.trip.destination} highlightIds={highlight} />
             <HotelCard
               hotel={itinerary.hotel}
               nights={itinerary.nights}
               rooms={itinerary.rooms}
               selected={!!itinerary.hotel && selectedId === itinerary.hotel.id}
+              highlighted={!!itinerary.hotel && highlight.has(itinerary.hotel.id)}
               onSelect={() => setSelectedId(itinerary.hotel?.id)}
             />
-            <DayTimeline days={itinerary.days} selectedId={selectedId} onSelect={setSelectedId} />
+            <DayTimeline days={itinerary.days} selectedId={selectedId} highlightIds={highlight} onSelect={setSelectedId} />
             <CostSplit itinerary={itinerary} />
           </>
         ) : match ? (
@@ -159,4 +200,19 @@ function matchLines(m: Match) {
           .filter((o) => o.destination.lat !== undefined && o.destination.lng !== undefined)
           .map((o) => ({ from: [h.lat!, h.lng!] as [number, number], to: [o.destination.lat!, o.destination.lng!] as [number, number], color: LINE_COLORS[i % LINE_COLORS.length] })),
   );
+}
+
+/** Ids of stops, the hotel and flights that are new in the edited plan. */
+function changedIds(before: Itinerary, after: Itinerary): Set<string> {
+  const old = new Set<string>([
+    ...before.days.flatMap((d) => d.stops.map((s) => s.item.id)),
+    ...(before.hotel ? [before.hotel.id] : []),
+    ...before.flights.flatMap((f) => [f.out?.id, f.back?.id].filter((x): x is string => !!x)),
+  ]);
+  const now = [
+    ...after.days.flatMap((d) => d.stops.map((s) => s.item.id)),
+    ...(after.hotel ? [after.hotel.id] : []),
+    ...after.flights.flatMap((f) => [f.out?.id, f.back?.id].filter((x): x is string => !!x)),
+  ];
+  return new Set(now.filter((id) => !old.has(id)));
 }

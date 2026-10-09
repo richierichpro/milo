@@ -6,7 +6,21 @@ import { Photo } from "./Photo";
 import { ProofLine } from "./ProofLine";
 import { Rating } from "./Rating";
 
-export function HotelCard({ hotel, nights, rooms, selected, onSelect }: { hotel?: Hotel; nights: number; rooms: number; selected: boolean; onSelect: () => void }) {
+export function HotelCard({
+  hotel,
+  nights,
+  rooms,
+  selected,
+  highlighted,
+  onSelect,
+}: {
+  hotel?: Hotel;
+  nights: number;
+  rooms: number;
+  selected: boolean;
+  highlighted?: boolean;
+  onSelect: () => void;
+}) {
   if (!hotel) return <p className="rounded-2xl border border-dashed border-line p-4 text-sm text-muted">No hotel could be checked for these dates.</p>;
   return (
     <section>
@@ -14,7 +28,7 @@ export function HotelCard({ hotel, nights, rooms, selected, onSelect }: { hotel?
       <button
         type="button"
         onClick={onSelect}
-        className={`flex w-full gap-4 overflow-hidden rounded-2xl border bg-white text-left hover:shadow-md ${selected ? "border-teal ring-2 ring-teal/30" : "border-line"}`}
+        className={`flex w-full gap-4 overflow-hidden rounded-2xl border bg-white text-left hover:shadow-md ${selected ? "border-teal ring-2 ring-teal/30" : "border-line"} ${highlighted ? "animate-pulse bg-marigold-soft" : ""}`}
       >
         <Photo src={hotel.thumbnail} alt={hotel.name} className="h-32 w-36 shrink-0 sm:w-48" />
         <div className="min-w-0 flex-1 py-3 pr-3">
