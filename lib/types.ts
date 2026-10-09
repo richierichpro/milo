@@ -19,6 +19,8 @@ export type Flight = {
   airlineLogo?: string;
   flightNumbers: string[];
   stops: number;
+  /** Layover airports, e.g. ["BLR"]. */
+  via: string[];
   durationMin: number;
   pricePerPerson: number;
 };

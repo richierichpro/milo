@@ -53,6 +53,7 @@ export function normalizeFlights(json: any): Flight[] {
       airlineLogo: str(o?.airline_logo) ?? str(first?.airline_logo),
       flightNumbers,
       stops: segs.length - 1,
+      via: segs.slice(0, -1).map((s) => str(s?.arrival_airport?.id)).filter((x): x is string => !!x),
       durationMin: num(o?.total_duration) ?? 0,
       pricePerPerson: price,
     });

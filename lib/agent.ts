@@ -2,7 +2,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { primaryCode, resolveAirport } from "./airports";
 import { createMessage, type ToolDef } from "./claude";
 import { inTrip, type CandidatePool } from "./gather";
-import { pickSquadFlights } from "./land-together";
+import { pickSquadFlights, selectFlightOptions } from "./land-together";
 import { averageCost, formatINR } from "./money";
 import { normalizeEvents, normalizeFlights, normalizeHotels, normalizePlaces } from "./normalize";
 import {
@@ -21,7 +21,6 @@ import { serpSearch } from "./serpapi";
 import type { CallLogEntry, Flight, Itinerary } from "./types";
 
 const MAX_ROUNDS = 6;
-const KEEP_FLIGHTS = 8;
 
 type EditDraft = PlanDraft & { flightMode: "together" | "cheapest"; changeNote: string };
 
@@ -178,13 +177,11 @@ export async function editPlan(
       const [from, to] = out ? [home, destCodes] : [destCodes, home];
       onProgress(`🔎 Google Flights · ${primaryCode(from)} → ${primaryCode(to)}${times ? ` · departs ${after}:00–${before}:59` : ""}${input.nonstopOnly ? " · nonstop" : ""}`);
       const json = await serpSearch(q.flightParams(from, to, out ? trip.startDate : trip.endDate, { outboundTimes: times, nonstop: !!input.nonstopOnly }), log);
-      const flights: Flight[] = normalizeFlights(json)
-        .sort((a, b) => a.pricePerPerson - b.pricePerPerson)
-        .slice(0, KEEP_FLIGHTS);
+      const flights: Flight[] = selectFlightOptions(normalizeFlights(json));
       if (!flights.length) return "No flights matched; the traveller's options were left unchanged.";
       (out ? pool.flightsOut : pool.flightsBack)[person.name] = flights;
       return `${person.name}'s ${out ? "outbound" : "return"} options are now:\n${flights
-        .map((f) => `${f.from} ${f.departTime.slice(11)} → ${f.to} ${f.arriveTime.slice(11)} ${f.arriveTime.slice(0, 10)} · ${formatINR(f.pricePerPerson)}`)
+        .map((f) => `${f.from} ${f.departTime.slice(11)} → ${f.to} ${f.arriveTime.slice(11)} ${f.arriveTime.slice(0, 10)} · ${f.stops ? `${f.stops} stop` : "nonstop"} · ${formatINR(f.pricePerPerson)}`)
         .join("\n")}\nThe app will re-pick everyone's flights from these when you submit.`;
     },
     async search_events(input) {

@@ -6,7 +6,7 @@ import type { Flight } from "../lib/types";
 const src = { engine: "google_flights", fetchedAt: "2026-10-09T00:00:00Z" };
 const f = (id: string, depart: string, arrive: string, price: number): Flight => ({
   id, source: src, from: "X", to: "GOI", departTime: `2026-11-20 ${depart}`, arriveTime: `2026-11-20 ${arrive}`,
-  airline: "Test Air", flightNumbers: [id], stops: 0, durationMin: 90, pricePerPerson: price,
+  airline: "Test Air", flightNumbers: [id], stops: 0, via: [], durationMin: 90, pricePerPerson: price,
 });
 const back = (id: string, depart: string, price: number) => ({ ...f(id, depart, "23:59", price), departTime: `2026-11-23 ${depart}` });
 const squad = [{ name: "A", city: "Pune" }, { name: "B", city: "Delhi" }];
@@ -49,4 +49,21 @@ test("a friend whose flight search failed doesn't block everyone else", () => {
   );
   assert.equal(r.flights[0].out?.id, "Ao");
   assert.equal(r.flights[1].out, undefined);
+});
+
+test("prefers everyone at the same airport over a slightly cheaper split", () => {
+  const at = (fl: Flight, to: string) => ({ ...fl, to });
+  const out = {
+    A: [at(f("A-GOX", "09:00", "11:00", 4000), "GOX")],
+    B: [at(f("B-GOI-cheap", "09:00", "11:05", 4500), "GOI"), at(f("B-GOX", "09:00", "11:10", 6000), "GOX")],
+  };
+  const r = pickSquadFlights(out, { A: [back("Ab", "18:00", 4000)], B: [back("Bb", "18:30", 4000)] }, squad);
+  assert.equal(r.flights[1].out?.id, "B-GOX"); // ₹1,500 more beats a ₹4,000 split
+});
+
+test("prefers a nonstop over a long one-stop at a similar price", () => {
+  const slow = { ...f("A-1stop", "05:00", "11:00", 4000), stops: 1, durationMin: 360 };
+  const fast = { ...f("A-nonstop", "09:45", "11:00", 4800), durationMin: 75 };
+  const r = pickSquadFlights({ A: [slow, fast], B: [f("Bo", "09:00", "11:00", 4000)] }, { A: [back("Ab", "18:00", 4000)], B: [back("Bb", "18:00", 4000)] }, squad);
+  assert.equal(r.flights[0].out?.id, "A-nonstop");
 });

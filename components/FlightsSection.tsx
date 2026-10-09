@@ -1,6 +1,6 @@
 "use client";
 
-import { clock } from "@/lib/format";
+import { clock, duration, stopsLabel } from "@/lib/format";
 import { formatINR } from "@/lib/money";
 import type { Flight, FlightPick } from "@/lib/types";
 import { Photo } from "./Photo";
@@ -17,8 +17,9 @@ function Leg({ f, label }: { f?: Flight; label: string }) {
         {f.from} {clock(f.departTime)} → {f.to} {clock(f.arriveTime)}
         {nextDay && <sup className="text-coral">+1</sup>}
       </span>
-      <span className="hidden text-muted sm:inline">
-        · {f.airline} · {f.stops ? `${f.stops} stop` : "nonstop"}
+      <span className="text-muted">
+        · {duration(f.durationMin)} · {stopsLabel(f.stops, f.via)}
+        <span className="hidden sm:inline"> · {f.airline}</span>
       </span>
       <span className="ml-auto font-semibold">{formatINR(f.pricePerPerson)}</span>
     </div>

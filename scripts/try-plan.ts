@@ -2,7 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { DEMO_TRIP } from "../lib/demo-trip";
 import { gatherCandidates } from "../lib/gather";
 import { averageCost, formatINR } from "../lib/money";
-import { pickSquadFlights } from "../lib/land-together";
+import { duration, stopsLabel } from "../lib/format";
+import { airportSplitNote, pickSquadFlights } from "../lib/land-together";
 import { planTrip } from "../lib/planner";
 
 async function main() {
@@ -16,7 +17,13 @@ async function main() {
 
   console.log(`\n${it.title}\n${it.summary}\n`);
   for (const f of it.flights)
-    console.log(`✈ ${f.person}: ${f.out?.from}→${f.out?.to} ${f.out?.departTime}→${f.out?.arriveTime.slice(11)} | back ${f.back?.departTime} (${formatINR((f.out?.pricePerPerson ?? 0) + (f.back?.pricePerPerson ?? 0))})`);
+    console.log(
+      `✈ ${f.person}: ${f.out?.from}→${f.out?.to} ${f.out?.departTime.slice(11)}→${f.out?.arriveTime.slice(11)} (${duration(f.out?.durationMin ?? 0)} · ${stopsLabel(f.out?.stops ?? 0, f.out?.via)}) | back ${f.back?.from} ${f.back?.departTime.slice(11)} (${duration(f.back?.durationMin ?? 0)} · ${stopsLabel(f.back?.stops ?? 0, f.back?.via)}) · ${formatINR((f.out?.pricePerPerson ?? 0) + (f.back?.pricePerPerson ?? 0))}`,
+    );
+  for (const d of ["out", "back"] as const) {
+    const note = airportSplitNote(it.flights, d);
+    if (note) console.log(`⚠ ${note}`);
+  }
   if (it.arrivalWindow) console.log(`Everyone lands between ${it.arrivalWindow.first.slice(11)} and ${it.arrivalWindow.last.slice(11)} · ${formatINR(it.arrivalWindow.extraVsCheapest)} more than the cheapest scattered flights`);
   console.log(`🏨 ${it.hotel?.name} · ${formatINR(it.hotel?.pricePerNight ?? 0)}/night × ${it.nights} nights × ${it.rooms} rooms`);
   it.days.forEach((d, i) => {

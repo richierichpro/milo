@@ -156,7 +156,7 @@ Rules:
 - Use only ids from the lists (like h3, p12, e1). Never make up an id or a place.
 - Pick one hotel (hotelId) that fits the budget and has a good rating.
 - 3–5 stops on full days, fewer on arrival and departure days.
-- Nothing before the squad is together on the first day, nothing after they must leave for the airport on the last day. If the squad lands at night, day 1 can be just dinner or nothing.
+- Nothing before the squad is together on the first day, nothing after they must leave for the airport on the last day. On day 1, put the first stop within about an hour of when the squad is together (a sunset spot or a snack counts). If the squad lands late at night, day 1 can be just dinner or nothing.
 - Keep each day's stops close together (use the @lat,lng). Mix sights and food: a meal around lunch and dinner on full days.
 - Include an event if one falls on the trip dates and suits the squad.
 - Each "why" is at most 15 words, about why it suits this squad.
@@ -270,6 +270,35 @@ export async function planTrip(pool: CandidatePool, trip: TripInput, opts: PlanO
   return assembleItinerary({ draft, grounded, removed, trip, flights, arrivalWindow, pool });
 }
 
+const roundUp15 = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  const total = Math.min(23 * 60 + 45, Math.ceil((h * 60 + m) / 15) * 15);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
+
+/**
+ * Claude arranges the times, but the flights set hard limits: on day 1 nothing
+ * starts before the squad is together, and on the last day nothing runs past
+ * the time they must leave for the airport.
+ */
+export function fitToFlights(days: Day[], flights: FlightPick[]): Day[] {
+  const w = togetherWindow(flights);
+  return days.map((d) => {
+    let stops = d.stops;
+    if (w.freeFrom && d.date === w.freeFrom.slice(0, 10)) {
+      const from = roundUp15(w.freeFrom.slice(11));
+      let prev = from;
+      stops = stops.map((st) => {
+        const time = st.time < prev ? prev : st.time;
+        prev = time;
+        return { ...st, time };
+      });
+    }
+    if (w.freeUntil && d.date === w.freeUntil.slice(0, 10)) stops = stops.filter((st) => st.time <= w.freeUntil!.slice(11));
+    return { ...d, stops };
+  });
+}
+
 export function assembleItinerary(args: {
   draft: PlanDraft;
   grounded: Grounded;
@@ -286,7 +315,8 @@ export function assembleItinerary(args: {
   const nights = nightsBetween(trip.startDate, trip.endDate);
   const lookup = lookupFor(args.pool);
   const flightIds = flights.flatMap((f) => [f.out, f.back]).filter(Boolean);
-  const stops = grounded.days.flatMap((d) => d.stops);
+  const days = fitToFlights(grounded.days, flights);
+  const stops = days.flatMap((d) => d.stops);
   const total = flightIds.length + (hotel ? 1 : 0) + stops.length;
   // Count again against the pool, so the badge is computed, not assumed.
   const verified =
@@ -305,7 +335,7 @@ export function assembleItinerary(args: {
     hotel,
     rooms: roomsFor(trip.squad.length),
     nights,
-    days: grounded.days,
+    days,
     verification: { total, verified, removed: args.removed },
     costs: costSplit(flights, hotel, nights),
     createdAt: new Date().toISOString(),

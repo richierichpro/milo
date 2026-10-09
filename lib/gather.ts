@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- raw SerpApi JSON is parsed here */
 import { resolveAirport } from "./airports";
+import { selectFlightOptions } from "./land-together";
 import { normalizeEvents, normalizeFlights, normalizeHotels, normalizePlaces } from "./normalize";
 import * as q from "./queries";
 import { serpSearch, type SerpParams } from "./serpapi";
@@ -15,9 +16,7 @@ export type CandidatePool = {
   errors: string[];
 };
 
-const KEEP = { flights: 8, hotels: 12, placesPerQuery: 10, events: 8, interests: 3 };
-
-const cheapest = (fs: Flight[]) => [...fs].sort((a, b) => a.pricePerPerson - b.pricePerPerson).slice(0, KEEP.flights);
+const KEEP = { hotels: 12, placesPerQuery: 10, events: 8, interests: 3 };
 
 export async function gatherCandidates(input: TripInput, onProgress?: (text: string) => void): Promise<CandidatePool> {
   const receipts: CallLogEntry[] = [];
@@ -46,7 +45,7 @@ export async function gatherCandidates(input: TripInput, onProgress?: (text: str
   }
   const uniqueHomes = [...new Set(homeCodes.values())];
   const flightSearch = (from: string, to: string, date: string) =>
-    run(`Google Flights ${from} → ${to}`, q.flightParams(from, to, date), (j) => cheapest(normalizeFlights(j)), []);
+    run(`Google Flights ${from} → ${to}`, q.flightParams(from, to, date), (j) => selectFlightOptions(normalizeFlights(j)), []);
 
   const byHome = (to: (home: string) => [string, string], date: string) =>
     Promise.all(uniqueHomes.map(async (h) => [h, await flightSearch(...to(h), date)] as const)).then(
