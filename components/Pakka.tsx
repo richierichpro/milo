@@ -20,6 +20,7 @@ import { ProgressFeed } from "./ProgressFeed";
 import { ReceiptsDrawer, receiptsSummary } from "./ReceiptsDrawer";
 import { SquadMatch } from "./SquadMatch";
 import { TripForm } from "./TripForm";
+import { TripSummary } from "./TripSummary";
 import { WhatsAppButton } from "./WhatsAppButton";
 
 const TripMap = dynamic(() => import("./TripMap"), {
@@ -29,6 +30,7 @@ const TripMap = dynamic(() => import("./TripMap"), {
 
 export function Pakka() {
   const [trip, setTrip] = useState<TripInput>(DEMO_TRIP);
+  const [editing, setEditing] = useState(false);
   const [progress, setProgress] = useState<string[]>([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string>();
@@ -106,6 +108,7 @@ export function Pakka() {
   };
 
   const makePlan = () => {
+    setEditing(false);
     if (!trip.destination.trim()) setMatch(undefined);
     run({ ...trip, destinationAirport: undefined }, true);
   };
@@ -126,8 +129,12 @@ export function Pakka() {
           <h1 className="font-display text-4xl text-teal">Pakka</h1>
           <p className="text-muted">The Goa plan that actually happens.</p>
         </div>
-        <TripForm value={trip} onChange={setTrip} onSubmit={makePlan} busy={running} />
-        <ProgressFeed lines={progress} running={running} />
+        {editing || !(itinerary || match) ? (
+          <TripForm value={trip} onChange={setTrip} onSubmit={makePlan} busy={running} />
+        ) : (
+          <TripSummary trip={itinerary?.trip ?? trip} onEdit={() => setEditing(true)} />
+        )}
+        <ProgressFeed lines={progress} running={running} receipts={receipts} />
         {error && <p className="rounded-2xl bg-coral/10 p-3 text-sm text-coral">{error}</p>}
         {itinerary && <ChatBox turns={turns} busy={chatting || running} onSend={chat} />}
       </aside>
