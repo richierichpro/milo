@@ -43,7 +43,7 @@ export function StopCard({
         <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted">
           {sub && <span>{sub}</span>}
           {isPlace && <Rating rating={stop.item.rating} reviews={stop.item.reviews} />}
-          {isPlace && stop.item.priceLevel && <span>{stop.item.priceLevel}</span>}
+          {isPlace && stop.item.priceLevel && <span>{stop.item.priceLevel} per person</span>}
         </p>
         {stop.why && (
           <p className="mt-1 text-sm text-ink/80">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { averageCost, formatINR } from "@/lib/money";
+import { activityCosts, averageCost, formatINR, formatRange } from "@/lib/money";
 import { settleUp } from "@/lib/settle";
 import type { Itinerary } from "@/lib/types";
 
@@ -10,6 +10,8 @@ export function CostSplit({ itinerary, onAsk, busy }: { itinerary: Itinerary; on
   const budget = itinerary.trip.budgetPerPerson;
   const over = budget ? itinerary.costs.filter((c) => c.total > budget) : [];
   const { average, transfers } = settleUp(itinerary.costs);
+  const stops = itinerary.days.flatMap((d) => d.stops);
+  const activities = activityCosts(stops.map((s) => (s.kind === "place" ? s.item.priceLevel : undefined)));
 
   return (
     <section className="space-y-2">
@@ -80,6 +82,17 @@ export function CostSplit({ itinerary, onAsk, busy }: { itinerary: Itinerary; on
             )}
           </div>
         )}
+        <div className="border-t border-line px-3 py-2 text-sm">
+          <p className="flex justify-between gap-2">
+            <span>Food &amp; activities, where Google lists a price</span>
+            <span className="font-semibold">{activities.priced ? `${formatRange(activities)} each` : "–"}</span>
+          </p>
+          <p className="text-xs text-muted">
+            {activities.priced
+              ? `${activities.priced} of ${activities.stops} stops have a listed price (Google Maps, per person). The rest aren't counted, so plan for more. Not included in the totals above.`
+              : `Google doesn't list prices for any of the ${activities.stops} stops, so they aren't counted here.`}
+          </p>
+        </div>
         <p className="border-t border-line px-3 py-2 text-xs text-muted">
           Hotel share = price per night × {itinerary.nights} nights × {itinerary.rooms} rooms ÷ {itinerary.costs.length} people. Average{" "}
           {formatINR(averageCost(itinerary.costs))}
