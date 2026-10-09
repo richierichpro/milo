@@ -10,7 +10,7 @@
 - [x] 6 Squad Match (hero)
 - [x] 7 Chat edits
 - [x] 8 Demo mode
-- [ ] 9 Polish and README
+- [x] 9 Polish and README
 
 ## Step 0: Setup
 - Next.js app in this folder: App Router, TypeScript, Tailwind CSS, ESLint, npm, no src/ folder, import alias "@/*". If create-next-app refuses because CLAUDE.md and PLAN.md exist, scaffold into a temp folder and move the files in.
