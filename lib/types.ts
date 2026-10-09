@@ -97,3 +97,31 @@ export type TripInput = {
   interests: string[];
   budgetPerPerson?: number;
 };
+
+export type FlightPick = { person: string; city: string; out?: Flight; back?: Flight };
+
+export type Stop =
+  | { kind: "place"; time: string; why: string; item: Place }
+  | { kind: "event"; time: string; why: string; item: Event };
+
+export type Day = { date: string; title: string; stops: Stop[] };
+
+export type Verification = { total: number; verified: number; removed: string[] };
+
+export type CostLine = { person: string; flights: number; hotelShare: number; total: number };
+
+export type Itinerary = {
+  title: string;
+  summary: string;
+  trip: TripInput;
+  flights: FlightPick[];
+  /** Set by the squad flight optimiser (Step 6). */
+  arrivalWindow?: { first: string; last: string; extraVsCheapest: number };
+  hotel?: Hotel;
+  rooms: number;
+  nights: number;
+  days: Day[];
+  verification: Verification;
+  costs: CostLine[];
+  createdAt: string;
+};

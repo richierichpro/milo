@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "try:serp": "tsx --env-file=.env.local scripts/try-serpapi.ts",
-    "try:gather": "tsx --env-file=.env.local scripts/try-gather.ts"
+    "try:gather": "tsx --env-file=.env.local scripts/try-gather.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "try:plan": "tsx --env-file=.env.local scripts/try-plan.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",
