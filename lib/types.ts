@@ -5,3 +5,95 @@ export type CallLogEntry = {
   ms: number;
   at: string;
 };
+
+export type Source = { engine: string; url?: string; fetchedAt: string };
+
+export type Flight = {
+  id: string;
+  source: Source;
+  from: string;
+  to: string;
+  departTime: string; // "YYYY-MM-DD HH:MM"
+  arriveTime: string;
+  airline: string;
+  airlineLogo?: string;
+  flightNumbers: string[];
+  stops: number;
+  durationMin: number;
+  pricePerPerson: number;
+};
+
+export type Hotel = {
+  id: string;
+  source: Source;
+  name: string;
+  lat: number;
+  lng: number;
+  pricePerNight?: number;
+  rating?: number;
+  reviews?: number;
+  stars?: number;
+  thumbnail?: string;
+  amenities: string[];
+  link?: string;
+};
+
+export type Place = {
+  id: string;
+  source: Source;
+  name: string;
+  category?: string;
+  lat: number;
+  lng: number;
+  rating?: number;
+  reviews?: number;
+  priceLevel?: string;
+  address?: string;
+  hours?: string;
+  thumbnail?: string;
+  description?: string;
+  mapsUrl: string;
+};
+
+export type Event = {
+  id: string;
+  source: Source;
+  title: string;
+  dateText?: string;
+  /** "YYYY-MM-DD" when the date could be parsed */
+  date?: string;
+  venue?: string;
+  address?: string;
+  link?: string;
+  thumbnail?: string;
+};
+
+export type Destination = {
+  id: string;
+  name: string;
+  country?: string;
+  lat?: number;
+  lng?: number;
+  airportCode?: string;
+  /** Round trip, per person (Travel Explore prices both legs together). */
+  flightPrice?: number;
+  /** Travel Explore omits this for India searches; see CLAUDE.md. */
+  hotelPrice?: number;
+  startDate?: string;
+  endDate?: string;
+  thumbnail?: string;
+  airline?: string;
+  stops?: number;
+  source: Source;
+};
+
+export type Person = { name: string; city: string };
+
+export type TripInput = {
+  squad: Person[];
+  destination: string;
+  startDate: string;
+  endDate: string;
+  interests: string[];
+  budgetPerPerson?: number;
+};

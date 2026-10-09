@@ -3,7 +3,7 @@
 ## Progress
 - [x] 0 Setup
 - [x] 1 SerpApi client
-- [ ] 2 Types and normalizers
+- [x] 2 Types and normalizers
 - [ ] 3 Gather a trip
 - [ ] 4 Grounded planner
 - [ ] 5 Main screen  (STOP after this for my review)
