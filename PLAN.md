@@ -6,7 +6,7 @@
 - [x] 2 Types and normalizers
 - [x] 3 Gather a trip
 - [x] 4 Grounded planner
-- [ ] 5 Main screen  (STOP after this for my review)
+- [x] 5 Main screen  (STOP after this for my review)
 - [ ] 6 Squad Match (hero)
 - [ ] 7 Chat edits
 - [ ] 8 Demo mode

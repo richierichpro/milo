@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- raw SerpApi JSON is parsed here */
 import { resolveAirport } from "./airports";
 import { normalizeEvents, normalizeFlights, normalizeHotels, normalizePlaces } from "./normalize";
 import * as q from "./queries";

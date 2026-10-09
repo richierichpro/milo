@@ -216,13 +216,16 @@ export function groundDraft(draft: PlanDraft, pool: CandidatePool, trip: TripInp
 export type PlanOptions = {
   /** Squad flight picker; defaults to the cheapest-each-way placeholder. */
   pickFlights?: (pool: CandidatePool, trip: TripInput) => Pick<Itinerary, "flights" | "arrivalWindow">;
+  onProgress?: (text: string) => void;
 };
 
 export async function planTrip(pool: CandidatePool, trip: TripInput, opts: PlanOptions = {}): Promise<Itinerary> {
   const { flights, arrivalWindow } = opts.pickFlights?.(pool, trip) ?? { flights: cheapestFlights(pool, trip) };
   const prompt = poolPrompt(pool, trip, flights);
 
+  opts.onProgress?.("Asking Claude to arrange the trip…");
   let draft = await callTool<PlanDraft>(PLANNER_SYSTEM, [{ role: "user", content: prompt }], SUBMIT_ITINERARY);
+  opts.onProgress?.("Checking every item against search results…");
   let grounded = groundDraft(draft, pool, trip);
   const removed = [...grounded.removed];
 
@@ -230,6 +233,7 @@ export async function planTrip(pool: CandidatePool, trip: TripInput, opts: PlanO
     const fix = `${prompt}\n\nYour previous plan:\n${JSON.stringify(draft)}\n\nProblems: ${
       grounded.removed.length ? `these ids are not in the lists: ${grounded.removed.join(", ")}. ` : ""
     }${grounded.daysToFix.length ? `Fix these days: ${grounded.daysToFix.join(", ")}. ` : ""}Resubmit the full plan, changing only what's needed to fix this.`;
+    opts.onProgress?.(`Removed ${grounded.removed.length || "no"} unverified item(s); asking Claude to fix ${grounded.daysToFix.length || "the"} day(s)…`);
     draft = await callTool<PlanDraft>(PLANNER_SYSTEM, [{ role: "user", content: fix }], SUBMIT_ITINERARY);
     grounded = groundDraft(draft, pool, trip);
     removed.push(...grounded.removed.filter((id) => !removed.includes(id)));

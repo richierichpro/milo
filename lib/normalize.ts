@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- raw SerpApi JSON is parsed here */
 import { createHash } from "node:crypto";
 import type { Destination, Event, Flight, Hotel, Place, Source } from "./types";
 
