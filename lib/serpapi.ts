@@ -15,6 +15,16 @@ export function isDemoMode(): boolean {
   return process.env.DEMO_MODE === "true" || !process.env.SERPAPI_API_KEY;
 }
 
+/** scripts/record-demo.ts sets this to copy every response it uses into demo-data/. */
+const isRecording = () => process.env.RECORD_DEMO === "true";
+
+async function recordForDemo(params: SerpParams, json: unknown) {
+  if (!isRecording()) return;
+  const file = cachePath(params, true);
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, JSON.stringify(json));
+}
+
 /** Params without api_key or empty values, sorted by name. */
 function cleanParams(params: SerpParams): [string, string][] {
   return Object.entries(params)
@@ -87,6 +97,7 @@ export async function serpSearch(params: SerpParams, opts?: { log?: CallLogEntry
   const cached = await readJson(cacheFile);
   if (cached) {
     checkError(engine, cached);
+    await recordForDemo(params, cached);
     record("cache");
     return cached;
   }
@@ -107,6 +118,7 @@ export async function serpSearch(params: SerpParams, opts?: { log?: CallLogEntry
 
   await mkdir(path.dirname(cacheFile), { recursive: true });
   await writeFile(cacheFile, JSON.stringify(json));
+  await recordForDemo(params, json);
   record("live");
   return json;
 }

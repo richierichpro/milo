@@ -13,24 +13,55 @@ export type ToolDef = Anthropic.Tool;
 type CreateParams = Anthropic.MessageCreateParamsNonStreaming;
 
 const CACHE_DIR = path.join(process.cwd(), ".cache", "claude");
+const DEMO_DIR = path.join(process.cwd(), "demo-data", "claude");
+
+export const DEMO_MISSING = "This edit isn't in the demo recording. Add an ANTHROPIC_API_KEY to try your own.";
+
+export function isClaudeDemo(): boolean {
+  return process.env.DEMO_MODE === "true" || !process.env.ANTHROPIC_API_KEY;
+}
+
+const hash = (v: unknown) => createHash("sha1").update(JSON.stringify(v)).digest("hex");
+
+/**
+ * Demo recordings are keyed without the model, so they replay whatever
+ * CLAUDE_MODEL a judge has set. Our requests contain no timestamps or
+ * "checked N min ago" text, so the same request always has the same key.
+ */
+const demoKey = (params: CreateParams) => hash({ ...params, model: undefined });
+
+async function readJson<T>(file: string): Promise<T | null> {
+  try {
+    return JSON.parse(await readFile(file, "utf8")) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function writeJson(file: string, value: unknown) {
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, JSON.stringify(value));
+}
 
 /**
  * Every Claude call goes through here. Responses are saved to disk keyed by a
- * hash of the request, so the same request never costs twice.
+ * hash of the request, so the same request never costs twice. In demo mode
+ * answers come only from demo-data/claude/.
  */
 async function create(params: CreateParams): Promise<Anthropic.Message> {
-  const key = createHash("sha1").update(JSON.stringify(params)).digest("hex");
-  const file = path.join(CACHE_DIR, `${key}.json`);
-  try {
-    return JSON.parse(await readFile(file, "utf8")) as Anthropic.Message;
-  } catch {
-    // not cached yet
+  const demoFile = path.join(DEMO_DIR, `${demoKey(params)}.json`);
+  if (isClaudeDemo()) {
+    const recorded = await readJson<Anthropic.Message>(demoFile);
+    if (!recorded) throw new Error(DEMO_MISSING);
+    return recorded;
   }
-  const res = await getClient().messages.create(params);
-  if (res.stop_reason !== "refusal") {
-    await mkdir(CACHE_DIR, { recursive: true });
-    await writeFile(file, JSON.stringify(res));
+  const file = path.join(CACHE_DIR, `${hash(params)}.json`);
+  let res = await readJson<Anthropic.Message>(file);
+  if (!res) {
+    res = await getClient().messages.create(params);
+    if (res.stop_reason !== "refusal") await writeJson(file, res);
   }
+  if (process.env.RECORD_DEMO === "true") await writeJson(demoFile, res);
   return res;
 }
 

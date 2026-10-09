@@ -12,7 +12,8 @@
     "test": "tsx --test tests/*.test.ts",
     "try:plan": "tsx --env-file=.env.local scripts/try-plan.ts",
     "try:squad": "tsx --env-file=.env.local scripts/try-squad.ts",
-    "try:chat": "tsx --env-file=.env.local scripts/try-chat.ts"
+    "try:chat": "tsx --env-file=.env.local scripts/try-chat.ts",
+    "record:demo": "tsx --env-file=.env.local scripts/record-demo.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",

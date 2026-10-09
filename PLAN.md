@@ -9,7 +9,7 @@
 - [x] 5 Main screen  (STOP after this for my review)
 - [x] 6 Squad Match (hero)
 - [x] 7 Chat edits
-- [ ] 8 Demo mode
+- [x] 8 Demo mode
 - [ ] 9 Polish and README
 
 ## Step 0: Setup

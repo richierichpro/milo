@@ -115,7 +115,7 @@ export function Pakka() {
   const lines = useMemo(() => (!itinerary && match ? matchLines(match) : []), [itinerary, match]);
 
   return (
-    <div className="grid min-h-screen grid-cols-1 lg:h-screen lg:grid-cols-[minmax(320px,30%)_1fr_minmax(320px,32%)]">
+    <div className="grid flex-1 grid-cols-1 lg:min-h-0 lg:grid-cols-[minmax(320px,30%)_1fr_minmax(320px,32%)]">
       <aside className="space-y-5 border-line p-5 lg:overflow-y-auto lg:border-r">
         <div>
           <h1 className="font-display text-4xl text-teal">Pakka</h1>
@@ -158,7 +158,7 @@ export function Pakka() {
         )}
       </main>
 
-      <section className="h-[360px] border-line lg:sticky lg:top-0 lg:h-screen lg:border-l">
+      <section className="h-[360px] border-line lg:h-full lg:border-l">
         <TripMap points={points} lines={lines} selectedId={selectedId} onSelect={setSelectedId} />
       </section>
     </div>
