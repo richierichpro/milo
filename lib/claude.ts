@@ -1,4 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 let client: Anthropic | null = null;
 const getClient = () => (client ??= new Anthropic());
@@ -7,6 +10,30 @@ export const model = () => process.env.CLAUDE_MODEL || "claude-sonnet-5-5";
 
 export type ToolDef = Anthropic.Tool;
 
+type CreateParams = Anthropic.MessageCreateParamsNonStreaming;
+
+const CACHE_DIR = path.join(process.cwd(), ".cache", "claude");
+
+/**
+ * Every Claude call goes through here. Responses are saved to disk keyed by a
+ * hash of the request, so the same request never costs twice.
+ */
+async function create(params: CreateParams): Promise<Anthropic.Message> {
+  const key = createHash("sha1").update(JSON.stringify(params)).digest("hex");
+  const file = path.join(CACHE_DIR, `${key}.json`);
+  try {
+    return JSON.parse(await readFile(file, "utf8")) as Anthropic.Message;
+  } catch {
+    // not cached yet
+  }
+  const res = await getClient().messages.create(params);
+  if (res.stop_reason !== "refusal") {
+    await mkdir(CACHE_DIR, { recursive: true });
+    await writeFile(file, JSON.stringify(res));
+  }
+  return res;
+}
+
 /**
  * Makes Claude answer through one tool and returns that tool's input.
  * Current models reject a forced tool_choice, so we use "auto" with a strict
@@ -14,7 +41,7 @@ export type ToolDef = Anthropic.Tool;
  */
 export async function callTool<T>(system: string, messages: Anthropic.MessageParam[], tool: ToolDef): Promise<T> {
   const request = (msgs: Anthropic.MessageParam[]) =>
-    getClient().messages.create({
+    create({
       model: model(),
       max_tokens: 16000,
       system: `${system}\n\nAnswer only by calling the ${tool.name} tool.`,
@@ -40,6 +67,6 @@ export async function callTool<T>(system: string, messages: Anthropic.MessagePar
 }
 
 /** Raw access for the chat agent's tool loop (Step 7). */
-export function createMessage(params: Omit<Anthropic.MessageCreateParamsNonStreaming, "model">) {
-  return getClient().messages.create({ model: model(), ...params });
+export function createMessage(params: Omit<CreateParams, "model">) {
+  return create({ model: model(), ...params });
 }
