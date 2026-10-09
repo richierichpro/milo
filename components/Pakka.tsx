@@ -170,7 +170,7 @@ export function Pakka() {
               onSelect={() => setSelectedId(itinerary.hotel?.id)}
             />
             <DayTimeline days={itinerary.days} selectedId={selectedId} highlightIds={highlight} onSelect={setSelectedId} />
-            <CostSplit itinerary={itinerary} />
+            <CostSplit itinerary={itinerary} onAsk={chat} busy={chatting || running} />
           </>
         ) : match ? (
           <SquadMatch match={match} onPick={pick} busy={running} />

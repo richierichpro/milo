@@ -67,3 +67,13 @@ test("prefers a nonstop over a long one-stop at a similar price", () => {
   const r = pickSquadFlights({ A: [slow, fast], B: [f("Bo", "09:00", "11:00", 4000)] }, { A: [back("Ab", "18:00", 4000)], B: [back("Bb", "18:00", 4000)] }, squad);
   assert.equal(r.flights[0].out?.id, "A-nonstop");
 });
+
+test("priceFirst gives that person their cheapest flight", () => {
+  const out = {
+    A: [f("A-cheap-early", "05:00", "07:00", 3000), f("A-aligned", "09:00", "11:00", 4300)],
+    B: [f("B-only", "08:30", "11:20", 5000)],
+  };
+  const backs = { A: [back("Ab", "18:00", 4000)], B: [back("Bb", "18:30", 4000)] };
+  assert.equal(pickSquadFlights(out, backs, squad).flights[0].out?.id, "A-aligned");
+  assert.equal(pickSquadFlights(out, backs, squad, { priceFirst: ["A"] }).flights[0].out?.id, "A-cheap-early");
+});

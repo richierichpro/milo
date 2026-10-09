@@ -22,20 +22,25 @@ import type { CallLogEntry, Flight, Itinerary } from "./types";
 
 const MAX_ROUNDS = 6;
 
-type EditDraft = PlanDraft & { flightMode: "together" | "cheapest"; changeNote: string };
+type EditDraft = PlanDraft & { flightMode: "together" | "cheapest"; priceFirst: string[]; changeNote: string };
 
 const SUBMIT_EDIT: ToolDef = {
   ...SUBMIT_ITINERARY,
   description: "Submit the full updated plan. This ends the edit.",
   input_schema: {
     ...SUBMIT_ITINERARY.input_schema,
-    required: [...(SUBMIT_ITINERARY.input_schema.required ?? []), "flightMode", "changeNote"],
+    required: [...(SUBMIT_ITINERARY.input_schema.required ?? []), "flightMode", "priceFirst", "changeNote"],
     properties: {
       ...(SUBMIT_ITINERARY.input_schema.properties as Record<string, unknown>),
       flightMode: {
         type: "string",
         enum: ["together", "cheapest"],
         description: "together = flights chosen so everyone lands close together (default); cheapest = each person's cheapest flights",
+      },
+      priceFirst: {
+        type: "array",
+        items: { type: "string" },
+        description: "Travellers who should get their cheapest flights even if they land apart from the others (e.g. when asked to find someone cheaper flights). Empty otherwise.",
       },
       changeNote: { type: "string", description: "1–2 sentences on what changed. No numbers or prices; the app adds them." },
     },
@@ -91,6 +96,7 @@ You are editing an existing plan for the squad.
 - Change only what the user asked for; keep everything else as it is.
 - If you need something that isn't in the lists, search for it first. Search results are added to the lists with new ids.
 - To change someone's flights, use search_flights. The app then re-picks everyone's flights so the squad still lands together.
+- To make someone's flights cheaper, list them in priceFirst; they get their cheapest flights and the others re-sync around them.
 - Finish by calling submit_itinerary with the full updated plan.`;
 
 /** The current plan in Claude's short-id format. */
@@ -240,7 +246,9 @@ export async function editPlan(
           continue;
         }
         const picked: Pick<Itinerary, "flights" | "arrivalWindow"> =
-          draft.flightMode === "cheapest" ? { flights: cheapestFlights(pool, trip) } : pickSquadFlights(pool.flightsOut, pool.flightsBack, trip.squad);
+          draft.flightMode === "cheapest"
+            ? { flights: cheapestFlights(pool, trip) }
+            : pickSquadFlights(pool.flightsOut, pool.flightsBack, trip.squad, { priceFirst: draft.priceFirst });
         const next = assembleItinerary({
           draft,
           grounded,
