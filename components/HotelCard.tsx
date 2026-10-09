@@ -8,6 +8,7 @@ import { Rating } from "./Rating";
 
 export function HotelCard({
   hotel,
+  distanceKm,
   nights,
   rooms,
   selected,
@@ -15,6 +16,7 @@ export function HotelCard({
   onSelect,
 }: {
   hotel?: Hotel;
+  distanceKm?: number;
   nights: number;
   rooms: number;
   selected: boolean;
@@ -47,6 +49,7 @@ export function HotelCard({
             <span className="font-semibold">{hotel.pricePerNight ? formatINR(hotel.pricePerNight) : "–"}</span>
             <span className="text-muted"> /night · {rooms} room{rooms > 1 ? "s" : ""} × {nights} nights</span>
           </p>
+          {distanceKm !== undefined && <p className="mt-1 text-sm text-muted">≈ {distanceKm < 1 ? "<1" : Math.round(distanceKm)} km from most of your plan</p>}
           {hotel.amenities.length ? <p className="mt-1 truncate text-xs text-muted">{hotel.amenities.slice(0, 4).join(" · ")}</p> : null}
           <ProofLine source={hotel.source} />
         </div>

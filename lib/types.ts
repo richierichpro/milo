@@ -108,7 +108,13 @@ export type Stop =
   | { kind: "place"; time: string; why: string; item: Place }
   | { kind: "event"; time: string; why: string; item: Event };
 
-export type Day = { date: string; title: string; stops: Stop[] };
+export type Day = {
+  date: string;
+  title: string;
+  stops: Stop[];
+  /** Straight-line km between the day's places × 1.3; approximate. */
+  approxKm?: number;
+};
 
 export type Verification = { total: number; verified: number; removed: string[] };
 
@@ -122,6 +128,8 @@ export type Itinerary = {
   /** Set by the squad flight optimiser (Step 6). */
   arrivalWindow?: { first: string; last: string; extraVsCheapest: number };
   hotel?: Hotel;
+  /** Typical km from the hotel to the plan's places. */
+  hotelDistanceKm?: number;
   rooms: number;
   nights: number;
   days: Day[];

@@ -23,6 +23,7 @@ export function DayTimeline({
             <span className="inline-block h-3 w-3 rounded-full" style={{ background: DAY_COLORS[i % DAY_COLORS.length] }} />
             Day {i + 1} · {dayLabel(day.date)} · <span className="text-teal">{day.title}</span>
           </h3>
+          {day.approxKm !== undefined && <p className="-mt-1 mb-2 pl-5 text-xs text-muted">≈ {day.approxKm} km today (approximate)</p>}
           {day.stops.length ? (
             <div className="space-y-2 border-l-2 border-dashed border-line pl-3">
               {day.stops.map((s, j) => (

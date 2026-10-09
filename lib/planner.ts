@@ -1,6 +1,7 @@
 import { callTool, type ToolDef } from "./claude";
 import { inTrip, type CandidatePool } from "./gather";
 import { costSplit, formatINR, nightsBetween, roomsFor } from "./money";
+import { approxRouteKm, centreOf, haversineKm, typicalDistanceKm, type LatLng } from "./geo";
 import type { Day, Event, FlightPick, Hotel, Itinerary, Place, Stop, TripInput } from "./types";
 
 // Claude picks and arranges candidates by id. It never supplies facts: every
@@ -109,9 +110,22 @@ function placeLine(p: Place, i: number): string {
 function eventLine(e: Event, i: number): string {
   return [alias.event(i), e.title, `event on ${e.date}`, e.dateText ?? "-", e.venue ?? "-", e.address ?? "-"].join(" | ");
 }
-function hotelLine(h: Hotel, i: number): string {
-  return [alias.hotel(i), h.name, h.stars ? `${h.stars}-star` : "hotel", fmtRating(h.rating, h.reviews), `${formatINR(h.pricePerNight ?? 0)}/night`, fmtLatLng(h.lat, h.lng)].join(" | ");
+function hotelLine(h: Hotel, i: number, centre?: LatLng): string {
+  const km = centre ? `${haversineKm(h, centre).toFixed(1)} km from centre` : "-";
+  return [alias.hotel(i), h.name, h.stars ? `${h.stars}-star` : "hotel", fmtRating(h.rating, h.reviews), `${formatINR(h.pricePerNight ?? 0)}/night`, km, fmtLatLng(h.lat, h.lng)].join(" | ");
 }
+
+/** Centre of the place candidates, which hotel distances are measured from. */
+export const placesCentre = (pool: CandidatePool) => centreOf(pool.places);
+
+/** Typical distance (km) from the hotel to the plan's places. */
+export function hotelDistanceKm(hotel: Hotel | undefined, days: Day[]): number | undefined {
+  const places = days.flatMap((d) => d.stops).filter((s) => s.kind === "place").map((s) => s.item as Place);
+  return hotel && places.length ? typicalDistanceKm(hotel, places) : undefined;
+}
+
+/** Ask Claude to reconsider the hotel when it's further than this from most stops. */
+export const HOTEL_FAR_KM = 10;
 
 export function tripDates(trip: Pick<TripInput, "startDate" | "endDate">): string[] {
   const out: string[] = [];
@@ -139,8 +153,8 @@ export function poolPrompt(pool: CandidatePool, trip: TripInput, flights: Flight
     `The whole squad is together from ${w.freeFrom ?? "?"} (last person lands ${w.lastArrival ?? "?"}) and must leave for the airport by ${w.freeUntil ?? "?"} (first flight home ${w.firstDeparture ?? "?"}).`,
     `Days to plan: ${tripDates(trip).join(", ")}.`,
     "",
-    "HOTELS (id | name | class | rating (reviews) | price | location):",
-    ...pool.hotels.map(hotelLine),
+    "HOTELS (id | name | class | rating (reviews) | price | distance from the centre of the places | location):",
+    ...pool.hotels.map((h, i) => hotelLine(h, i, placesCentre(pool))),
     "",
     "PLACES (id | name | category | rating (reviews) | price | address | hours | location):",
     ...pool.places.map(placeLine),
@@ -154,7 +168,7 @@ export const PLANNER_SYSTEM = `You are Pakka's trip planner. You arrange a group
 
 Rules:
 - Use only ids from the lists (like h3, p12, e1). Never make up an id or a place.
-- Pick one hotel (hotelId) that fits the budget and has a good rating.
+- Pick one hotel (hotelId) that fits the budget and has a good rating. Prefer hotels within about 5 km of the centre of the places, unless one further away is much cheaper.
 - 3–5 stops on full days, fewer on arrival and departure days.
 - Nothing before the squad is together on the first day, nothing after they must leave for the airport on the last day. On day 1, put the first stop within about an hour of when the squad is together (a sunset spot or a snack counts). If the squad lands late at night, day 1 can be just dinner or nothing.
 - Keep each day's stops close together (use the @lat,lng). Mix sights and food: a meal around lunch and dinner on full days.
@@ -225,7 +239,7 @@ export function groundDraft(draft: PlanDraft, pool: CandidatePool, trip: TripInp
       }
       if (seen.has(item.id)) continue;
       seen.add(item.id);
-      const base = { time: validTime(s.time), why: sanitizeText(clipWords(s.why, 15), 1) };
+      const base = { time: validTime(s.time), why: clipWords(s.why.trim(), 15) };
       stops.push(place ? { kind: "place", ...base, item: place } : { kind: "event", ...base, item: event! });
     }
     stops.sort((a, b) => a.time.localeCompare(b.time));
@@ -257,11 +271,19 @@ export async function planTrip(pool: CandidatePool, trip: TripInput, opts: PlanO
   let grounded = groundDraft(draft, pool, trip);
   const removed = [...grounded.removed];
 
-  if (grounded.removed.length || grounded.daysToFix.length) {
+  const farKm = hotelDistanceKm(grounded.hotel, grounded.days);
+  const hotelFar = farKm !== undefined && farKm > HOTEL_FAR_KM;
+  if (grounded.removed.length || grounded.daysToFix.length || hotelFar) {
     const fix = `${prompt}\n\nYour previous plan:\n${JSON.stringify(draft)}\n\nProblems: ${
       grounded.removed.length ? `these ids are not in the lists: ${grounded.removed.join(", ")}. ` : ""
-    }${grounded.daysToFix.length ? `Fix these days: ${grounded.daysToFix.join(", ")}. ` : ""}Resubmit the full plan, changing only what's needed to fix this.`;
-    opts.onProgress?.(`Removed ${grounded.removed.length || "no"} unverified item(s); asking Claude to fix ${grounded.daysToFix.length || "the"} day(s)…`);
+    }${grounded.daysToFix.length ? `Fix these days: ${grounded.daysToFix.join(", ")}. ` : ""}${
+      hotelFar ? `The hotel ${draft.hotelId} is about ${Math.round(farKm!)} km from most of the stops; pick a hotel closer to them unless it is much cheaper. ` : ""
+    }Resubmit the full plan, changing only what's needed to fix this.`;
+    opts.onProgress?.(
+      hotelFar && !grounded.removed.length && !grounded.daysToFix.length
+        ? `The hotel is ~${Math.round(farKm!)} km from most stops; asking Claude to reconsider…`
+        : `Removed ${grounded.removed.length || "no"} unverified item(s); asking Claude to fix the plan…`,
+    );
     draft = await callTool<PlanDraft>(PLANNER_SYSTEM, [{ role: "user", content: fix }], SUBMIT_ITINERARY);
     grounded = groundDraft(draft, pool, trip);
     removed.push(...grounded.removed.filter((id) => !removed.includes(id)));
@@ -315,7 +337,10 @@ export function assembleItinerary(args: {
   const nights = nightsBetween(trip.startDate, trip.endDate);
   const lookup = lookupFor(args.pool);
   const flightIds = flights.flatMap((f) => [f.out, f.back]).filter(Boolean);
-  const days = fitToFlights(grounded.days, flights);
+  const days = fitToFlights(grounded.days, flights).map((d) => {
+    const pts = d.stops.filter((s) => s.kind === "place").map((s) => s.item as Place);
+    return pts.length > 1 ? { ...d, approxKm: Math.round(approxRouteKm(pts)) } : d;
+  });
   const stops = days.flatMap((d) => d.stops);
   const total = flightIds.length + (hotel ? 1 : 0) + stops.length;
   // Count again against the pool, so the badge is computed, not assumed.
@@ -326,9 +351,7 @@ export function assembleItinerary(args: {
 
   return {
     title: HAS_FACT.test(draft.title) ? `${trip.destination} with the squad` : draft.title,
-    summary:
-      sanitizeText(draft.summary) ||
-      `${grounded.days.filter((d) => d.stops.length).map((d) => d.title).join(", then ")}.`,
+    summary: clipWords(draft.summary.trim(), 60),
     trip,
     flights,
     arrivalWindow: args.arrivalWindow,
@@ -336,6 +359,7 @@ export function assembleItinerary(args: {
     rooms: roomsFor(trip.squad.length),
     nights,
     days,
+    hotelDistanceKm: hotelDistanceKm(hotel, days),
     verification: { total, verified, removed: args.removed },
     costs: costSplit(flights, hotel, nights),
     createdAt: new Date().toISOString(),

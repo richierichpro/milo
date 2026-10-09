@@ -162,6 +162,7 @@ export function Pakka() {
             <FlightsSection flights={itinerary.flights} destination={itinerary.trip.destination} highlightIds={highlight} />
             <HotelCard
               hotel={itinerary.hotel}
+              distanceKm={itinerary.hotelDistanceKm}
               nights={itinerary.nights}
               rooms={itinerary.rooms}
               selected={!!itinerary.hotel && selectedId === itinerary.hotel.id}

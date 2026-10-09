@@ -25,9 +25,9 @@ async function main() {
     if (note) console.log(`⚠ ${note}`);
   }
   if (it.arrivalWindow) console.log(`Everyone lands between ${it.arrivalWindow.first.slice(11)} and ${it.arrivalWindow.last.slice(11)} · ${formatINR(it.arrivalWindow.extraVsCheapest)} more than the cheapest scattered flights`);
-  console.log(`🏨 ${it.hotel?.name} · ${formatINR(it.hotel?.pricePerNight ?? 0)}/night × ${it.nights} nights × ${it.rooms} rooms`);
+  console.log(`🏨 ${it.hotel?.name} · ${formatINR(it.hotel?.pricePerNight ?? 0)}/night × ${it.nights} nights × ${it.rooms} rooms · ≈ ${it.hotelDistanceKm?.toFixed(1)} km from most of the plan`);
   it.days.forEach((d, i) => {
-    console.log(`\nDay ${i + 1} · ${d.date} · ${d.title}`);
+    console.log(`\nDay ${i + 1} · ${d.date} · ${d.title}${d.approxKm !== undefined ? ` · ≈ ${d.approxKm} km` : ""}`);
     for (const s of d.stops) console.log(`  ${s.time}  ${s.kind === "place" ? s.item.name : s.item.title}  — ${s.why}`);
   });
   const v = it.verification;

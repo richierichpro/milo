@@ -45,9 +45,11 @@ export function StopCard({
           {isPlace && <Rating rating={stop.item.rating} reviews={stop.item.reviews} />}
           {isPlace && stop.item.priceLevel && <span>{stop.item.priceLevel}</span>}
         </p>
-        <p className="mt-1 text-sm text-ink/80">
-          <span className="text-teal">Pakka&apos;s note:</span> {stop.why}
-        </p>
+        {stop.why && (
+          <p className="mt-1 text-sm text-ink/80">
+            <span className="text-teal">Pakka&apos;s note:</span> {stop.why}
+          </p>
+        )}
         <ProofLine source={stop.item.source} />
       </div>
     </button>
