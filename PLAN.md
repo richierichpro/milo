@@ -2,7 +2,7 @@
 
 ## Progress
 - [x] 0 Setup
-- [ ] 1 SerpApi client
+- [x] 1 SerpApi client
 - [ ] 2 Types and normalizers
 - [ ] 3 Gather a trip
 - [ ] 4 Grounded planner
