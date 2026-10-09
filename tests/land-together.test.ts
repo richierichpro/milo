@@ -77,3 +77,12 @@ test("priceFirst gives that person their cheapest flight", () => {
   assert.equal(pickSquadFlights(out, backs, squad).flights[0].out?.id, "A-aligned");
   assert.equal(pickSquadFlights(out, backs, squad, { priceFirst: ["A"] }).flights[0].out?.id, "A-cheap-early");
 });
+
+test("priceFirst with keep leaves everyone else on their flights", () => {
+  const bOld = f("B-old", "08:30", "11:20", 5000);
+  const out = { A: [f("A-cheap", "05:00", "07:00", 3000), f("A-aligned", "09:00", "11:00", 4300)], B: [f("B-new", "04:00", "06:00", 4000), bOld] };
+  const backs = { A: [back("Ab", "18:00", 4000)], B: [back("Bb", "18:30", 4000)] };
+  const r = pickSquadFlights(out, backs, squad, { priceFirst: ["A"], keep: [{ person: "B", city: "Delhi", out: bOld, back: backs.B[0] }] });
+  assert.equal(r.flights[0].out?.id, "A-cheap");
+  assert.equal(r.flights[1].out?.id, "B-old");
+});

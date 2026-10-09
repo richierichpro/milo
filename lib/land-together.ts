@@ -93,14 +93,19 @@ export function pickSquadFlights(
   flightsOut: Record<string, Flight[]>,
   flightsBack: Record<string, Flight[]>,
   squad: Person[],
-  opts: { priceFirst?: string[] } = {},
+  opts: { priceFirst?: string[]; keep?: FlightPick[] } = {},
 ): SquadFlights {
-  // People who asked for price first get their cheapest flight; the rest align around them.
+  // People who asked for price first get their cheapest flight. Anyone in `keep`
+  // stays on the flights they already have.
   const priceFirst = new Set(opts.priceFirst ?? []);
-  const cheapestOnly = (fs: Flight[] | undefined, name: string) =>
-    priceFirst.has(name) && fs?.length ? [[...fs].sort((a, b) => a.pricePerPerson - b.pricePerPerson)[0]] : fs;
-  flightsOut = Object.fromEntries(squad.map((p) => [p.name, cheapestOnly(flightsOut[p.name], p.name) ?? []]));
-  flightsBack = Object.fromEntries(squad.map((p) => [p.name, cheapestOnly(flightsBack[p.name], p.name) ?? []]));
+  const kept = new Map((opts.keep ?? []).map((k) => [k.person, k]));
+  const restrict = (fs: Flight[] | undefined, name: string, current?: Flight) => {
+    if (priceFirst.has(name) && fs?.length) return [[...fs].sort((a, b) => a.pricePerPerson - b.pricePerPerson)[0]];
+    if (current) return [current];
+    return fs ?? [];
+  };
+  flightsOut = Object.fromEntries(squad.map((p) => [p.name, restrict(flightsOut[p.name], p.name, kept.get(p.name)?.out)]));
+  flightsBack = Object.fromEntries(squad.map((p) => [p.name, restrict(flightsBack[p.name], p.name, kept.get(p.name)?.back)]));
   // Anyone whose search failed is left out of the optimisation (their card says "couldn't check this").
   const withOut = squad.filter((p) => flightsOut[p.name]?.length);
   const withBack = squad.filter((p) => flightsBack[p.name]?.length);

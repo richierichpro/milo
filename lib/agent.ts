@@ -40,7 +40,8 @@ const SUBMIT_EDIT: ToolDef = {
       priceFirst: {
         type: "array",
         items: { type: "string" },
-        description: "Travellers who should get their cheapest flights even if they land apart from the others (e.g. when asked to find someone cheaper flights). Empty otherwise.",
+        description:
+          "Only when the user explicitly asks for cheaper flights for someone: those travellers get their cheapest flights both ways and everyone else keeps their flights. Leave empty for time changes or anything else.",
       },
       changeNote: { type: "string", description: "1–2 sentences on what changed. No numbers or prices; the app adds them." },
     },
@@ -96,7 +97,7 @@ You are editing an existing plan for the squad.
 - Change only what the user asked for; keep everything else as it is.
 - If you need something that isn't in the lists, search for it first. Search results are added to the lists with new ids.
 - To change someone's flights, use search_flights. The app then re-picks everyone's flights so the squad still lands together.
-- To make someone's flights cheaper, list them in priceFirst; they get their cheapest flights and the others re-sync around them.
+- Only when the user explicitly asks for cheaper flights for someone, list them in priceFirst (everyone else keeps their flights). For timing requests ("can't leave before 6pm"), use search_flights with departAfter/departBefore and leave priceFirst empty.
 - Finish by calling submit_itinerary with the full updated plan.`;
 
 /** The current plan in Claude's short-id format. */
@@ -186,6 +187,7 @@ export async function editPlan(
       const flights: Flight[] = selectFlightOptions(normalizeFlights(json));
       if (!flights.length) return "No flights matched; the traveller's options were left unchanged.";
       (out ? pool.flightsOut : pool.flightsBack)[person.name] = flights;
+      searched.add(person.name);
       return `${person.name}'s ${out ? "outbound" : "return"} options are now:\n${flights
         .map((f) => `${f.from} ${f.departTime.slice(11)} → ${f.to} ${f.arriveTime.slice(11)} ${f.arriveTime.slice(0, 10)} · ${f.stops ? `${f.stops} stop` : "nonstop"} · ${formatINR(f.pricePerPerson)}`)
         .join("\n")}\nThe app will re-pick everyone's flights from these when you submit.`;
@@ -209,6 +211,8 @@ export async function editPlan(
     },
   ];
 
+  // Travellers whose options this edit searched again (they may move).
+  const searched = new Set<string>();
   let retriedGrounding = false;
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const res = await createMessage({
@@ -246,9 +250,14 @@ export async function editPlan(
           continue;
         }
         const picked: Pick<Itinerary, "flights" | "arrivalWindow"> =
-          draft.flightMode === "cheapest"
+          // A named traveller (priceFirst) wins over squad-wide cheapest mode.
+          draft.flightMode === "cheapest" && !draft.priceFirst.length
             ? { flights: cheapestFlights(pool, trip) }
-            : pickSquadFlights(pool.flightsOut, pool.flightsBack, trip.squad, { priceFirst: draft.priceFirst });
+            : pickSquadFlights(pool.flightsOut, pool.flightsBack, trip.squad, {
+                priceFirst: draft.priceFirst,
+                // "Cheaper flights for Kabir" shouldn't move anyone else.
+                keep: draft.priceFirst.length ? itinerary.flights.filter((f) => !draft.priceFirst.includes(f.person) && !searched.has(f.person)) : [],
+              });
         const next = assembleItinerary({
           draft,
           grounded,

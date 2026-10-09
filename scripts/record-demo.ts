@@ -34,7 +34,10 @@ async function main() {
   const typed = parseTripInput(DEMO_TRIP) as TripInput;
   await planTrip(await gatherCandidates(typed), typed, { pickFlights: (p, t) => pickSquadFlights(p.flightsOut, p.flightsBack, t.squad) });
 
-  for (const [i, chip] of CHIPS.entries()) {
+  // The cost split's "Find <name> cheaper flights" buttons, for everyone over budget.
+  const budget = trip.budgetPerPerson ?? Infinity;
+  const callouts = itinerary.costs.filter((c) => c.total > budget).map((c) => `Find ${c.person} cheaper flights`);
+  for (const [i, chip] of [...CHIPS, ...callouts].entries()) {
     console.log(`${3 + i}. Chat: ${chip}`);
     try {
       const r = await editPlan(itinerary, pool, chip, (t) => console.log(`   ${t}`));

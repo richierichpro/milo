@@ -13,8 +13,11 @@ AI trip planners don't fix this. They plan for one traveller, and they make thin
 ## What Pakka does
 
 1. **Squad Match: "Where should we go?"** Enter each friend's home city and a budget, and leave the destination empty. Pakka runs Google Travel Explore from every city, keeps the places everyone can fly to, prices real hotels there, and ranks them by what the whole squad pays and how fair the split is ("≈ ₹18,985 each · gap ₹4,197 · 3/4 within budget").
-2. **Land together.** For the chosen place, Pakka searches Google Flights for every person, both ways, and tries every combination to find the one where everyone lands within about an hour of each other without overpaying ("Everyone lands between 15:10 and 16:10 · ₹3,242 more than the cheapest scattered flights").
-3. **A grounded day-by-day plan.** Claude arranges hotels, places and events, but it can only pick from what search returned. Code checks every item against the search results and removes anything else. The plan shows a cost split per person and a "Copy for WhatsApp" button.
+2. **Land together.** For the chosen place, Pakka searches Google Flights for every person, both ways, keeps every nonstop plus the cheapest options, and tries every combination. Each combination is scored on price plus penalties for arriving far apart, landing at a different airport from the others (Goa's GOI and GOX are 1.5–2 h apart), slow flights and stops. All of these are in one place: [lib/land-together.ts](lib/land-together.ts). The plan shows the result plainly ("Everyone lands between 18:25 and 21:15 at GOI"), or says who is split off.
+3. **A grounded day-by-day plan.** Claude arranges hotels, places and events, but it can only pick from what search returned. Code checks every item against the search results and removes anything else. Claude is steered to a hotel near the plan and is asked to reconsider once if the hotel ends up more than 10 km from most stops. The plan also includes:
+   - a map route for each day (click a day to focus it) and "≈ N km today" under each day;
+   - a cost split with an over-budget callout ("Kabir is ₹1,649 over budget" with a one-tap "Find Kabir cheaper flights") and an equal-split view showing who pays whom;
+   - a "Copy for WhatsApp" button.
 4. **Chat edits that search again.** "Make it cheaper", "Kabir can't leave Delhi before 6pm Friday" or "Add a sunset cruise" trigger new Google searches, re-sync everyone's flights, and pass the same grounding check.
 
 ## Screenshots
@@ -86,7 +89,7 @@ Open http://localhost:3000. A banner says "Demo mode · real search data recorde
 
 - Leave **Where to?** empty and press **Make it pakka** to get Squad Match, then pick **Goa**.
 - Or type **Goa** and press **Make it pakka**.
-- Then try the four suggestion chips under "Change anything".
+- Then try the four suggestion chips under "Change anything", and the "Find … cheaper flights" buttons on the cost split.
 
 Other trips and free-text edits need API keys. Pakka says so instead of making something up.
 
@@ -107,7 +110,7 @@ Then run `npm run dev`. Searches and Claude answers are cached in `.cache/`, so 
 
 | Command | What it does |
 |---|---|
-| `npm test` | Unit tests: grounding removes made-up ids; the optimiser prefers aligned arrivals |
+| `npm test` | Unit tests: grounding removes made-up ids; the optimiser prefers aligned arrivals, one airport and nonstops; equal-split settle-up |
 | `npm run try:gather` | Runs every search for the demo squad and prints counts (live vs cache) |
 | `npm run try:plan` | Plans the demo trip in the terminal |
 | `npm run try:squad` | Squad Match for the demo squad |
