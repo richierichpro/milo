@@ -21,7 +21,13 @@ export function HotelCard({
   highlighted?: boolean;
   onSelect: () => void;
 }) {
-  if (!hotel) return <p className="rounded-2xl border border-dashed border-line p-4 text-sm text-muted">No hotel could be checked for these dates.</p>;
+  if (!hotel)
+    return (
+      <section>
+        <h3 className="mb-2 font-display text-xl">Where you&apos;ll stay</h3>
+        <p className="rounded-2xl border border-dashed border-line p-4 text-sm text-muted">Hotels: couldn&apos;t check this. Google Hotels didn&apos;t answer, so no stay is suggested.</p>
+      </section>
+    );
   return (
     <section>
       <h3 className="mb-2 font-display text-xl">Where you&apos;ll stay</h3>

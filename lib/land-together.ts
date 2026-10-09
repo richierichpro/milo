@@ -49,10 +49,19 @@ export type SquadFlights = Pick<Itinerary, "flights" | "arrivalWindow"> & {
  * departures) close while staying cheap.
  */
 export function pickSquadFlights(flightsOut: Record<string, Flight[]>, flightsBack: Record<string, Flight[]>, squad: Person[]): SquadFlights {
-  const out = bestCombo(squad.map((p) => flightsOut[p.name] ?? []), (f) => f.arriveTime);
-  const back = bestCombo(squad.map((p) => flightsBack[p.name] ?? []), (f) => f.departTime);
+  // Anyone whose search failed is left out of the optimisation (their card says "couldn't check this").
+  const withOut = squad.filter((p) => flightsOut[p.name]?.length);
+  const withBack = squad.filter((p) => flightsBack[p.name]?.length);
+  const out = bestCombo(withOut.map((p) => flightsOut[p.name]), (f) => f.arriveTime);
+  const back = bestCombo(withBack.map((p) => flightsBack[p.name]), (f) => f.departTime);
+  const pickFor = (people: Person[], combo: Combo | undefined, name: string) => combo?.flights[people.findIndex((p) => p.name === name)];
 
-  const flights: FlightPick[] = squad.map((p, i) => ({ person: p.name, city: p.city, out: out.best?.flights[i], back: back.best?.flights[i] }));
+  const flights: FlightPick[] = squad.map((p) => ({
+    person: p.name,
+    city: p.city,
+    out: pickFor(withOut, out.best, p.name),
+    back: pickFor(withBack, back.best, p.name),
+  }));
   const bestTotal = (out.best?.price ?? 0) + (back.best?.price ?? 0);
   const cheapestTotal = (out.cheapest?.price ?? 0) + (back.cheapest?.price ?? 0);
   const window = (fs: Flight[] | undefined, timeOf: (f: Flight) => string) => {

@@ -3,12 +3,12 @@
 import { dayLabel, initials } from "@/lib/format";
 import { averageCost, formatINR } from "@/lib/money";
 import type { Itinerary } from "@/lib/types";
+import { VerifiedBadge } from "./VerifiedBadge";
 
 const AVATAR_COLORS = ["bg-teal", "bg-marigold", "bg-coral", "bg-[#6b4c9a]", "bg-[#2f855a]", "bg-[#b83280]"];
 
 export function PlanHeader({ itinerary, children }: { itinerary: Itinerary; children?: React.ReactNode }) {
   const { trip, verification: v } = itinerary;
-  const allVerified = v.verified === v.total;
   return (
     <header className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -36,12 +36,7 @@ export function PlanHeader({ itinerary, children }: { itinerary: Itinerary; chil
             </span>
           ))}
         </div>
-        <span
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${allVerified ? "bg-ok/10 text-ok" : "bg-coral/10 text-coral"}`}
-          title="Every flight, hotel, place and event comes from a live SerpApi result. Claude arranges them and can't add its own."
-        >
-          ✓ {v.verified}/{v.total} verified with live Google data
-        </span>
+        <VerifiedBadge v={v} />
         {children}
       </div>
     </header>

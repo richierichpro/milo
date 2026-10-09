@@ -17,6 +17,7 @@ import { FlightsSection } from "./FlightsSection";
 import { HotelCard } from "./HotelCard";
 import { PlanHeader } from "./PlanHeader";
 import { ProgressFeed } from "./ProgressFeed";
+import { ReceiptsDrawer, receiptsSummary } from "./ReceiptsDrawer";
 import { SquadMatch } from "./SquadMatch";
 import { TripForm } from "./TripForm";
 import { WhatsAppButton } from "./WhatsAppButton";
@@ -32,7 +33,8 @@ export function Pakka() {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string>();
   const [itinerary, setItinerary] = useState<Itinerary>();
-  const [, setReceipts] = useState<CallLogEntry[]>([]);
+  const [receipts, setReceipts] = useState<CallLogEntry[]>([]);
+  const [receiptsOpen, setReceiptsOpen] = useState(false);
   const [pool, setPool] = useState<CandidatePool>();
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [chatting, setChatting] = useState(false);
@@ -40,7 +42,8 @@ export function Pakka() {
   const [selectedId, setSelectedId] = useState<string>();
   const [match, setMatch] = useState<Match>();
 
-  const run = useCallback(async (input: TripInput) => {
+  const run = useCallback(async (input: TripInput, fresh: boolean) => {
+    if (fresh) setReceipts([]);
     setRunning(true);
     setError(undefined);
     setProgress([]);
@@ -53,10 +56,10 @@ export function Pakka() {
         else if (msg.type === "destinations") {
           setMatch(msg.match);
           setItinerary(undefined);
-          setReceipts(msg.receipts);
+          setReceipts((r) => [...r, ...msg.receipts]);
         } else if (msg.type === "plan") {
           setItinerary(msg.itinerary);
-          setReceipts(msg.receipts);
+          setReceipts((r) => [...r, ...msg.receipts]);
           setPool(msg.pool);
           setTurns([]);
           setSelectedId(undefined);
@@ -103,12 +106,12 @@ export function Pakka() {
 
   const makePlan = () => {
     if (!trip.destination.trim()) setMatch(undefined);
-    run({ ...trip, destinationAirport: undefined });
+    run({ ...trip, destinationAirport: undefined }, true);
   };
   const pick = (o: DestinationOption) => {
     const next = { ...trip, destination: o.destination.name, destinationAirport: o.destination.airportCode };
     setTrip(next);
-    run(next);
+    run(next, false);
   };
 
   const points = useMemo(() => (itinerary ? pointsFor(itinerary) : match ? matchPoints(match) : []), [itinerary, match]);
@@ -137,7 +140,24 @@ export function Pakka() {
             )}
             <PlanHeader itinerary={itinerary}>
               <WhatsAppButton itinerary={itinerary} />
+              <button
+                type="button"
+                onClick={() => setReceiptsOpen(true)}
+                className="rounded-full border border-line bg-white px-3 py-1 text-sm hover:border-teal"
+              >
+                🧾 {receiptsSummary(receipts)}
+              </button>
             </PlanHeader>
+            {pool && pool.errors.length > 0 && (
+              <div className="rounded-2xl border border-marigold/50 bg-marigold-soft p-3 text-sm">
+                <p className="font-semibold">Some searches failed, so those parts couldn&apos;t be checked:</p>
+                <ul className="mt-1 list-disc pl-5 text-muted">
+                  {pool.errors.map((e) => (
+                    <li key={e}>{e}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <ArrivalTimeline itinerary={itinerary} />
             <FlightsSection flights={itinerary.flights} destination={itinerary.trip.destination} highlightIds={highlight} />
             <HotelCard
@@ -158,6 +178,7 @@ export function Pakka() {
         )}
       </main>
 
+      <ReceiptsDrawer receipts={receipts} open={receiptsOpen} onClose={() => setReceiptsOpen(false)} />
       <section className="h-[360px] border-line lg:h-full lg:border-l">
         <TripMap points={points} lines={lines} selectedId={selectedId} onSelect={setSelectedId} />
       </section>

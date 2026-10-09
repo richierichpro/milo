@@ -40,3 +40,13 @@ test("return departures are aligned too", () => {
   }, squad);
   assert.equal(r.flights[0].back?.id, "A-1800");
 });
+
+test("a friend whose flight search failed doesn't block everyone else", () => {
+  const r = pickSquadFlights(
+    { A: [f("Ao", "09:00", "11:00", 4000)], B: [] },
+    { A: [back("Ab", "18:00", 4000)] },
+    squad,
+  );
+  assert.equal(r.flights[0].out?.id, "Ao");
+  assert.equal(r.flights[1].out, undefined);
+});
