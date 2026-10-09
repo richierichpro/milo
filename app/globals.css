@@ -40,6 +40,18 @@ body {
   background: var(--sand-deep);
 }
 
+.pin-hotel {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: white;
+  border: 3px solid var(--marigold);
+  font-size: 18px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+}
+
 .pin {
   display: grid;
   place-items: center;

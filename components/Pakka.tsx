@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState } from "react";
 import { DEMO_TRIP } from "@/lib/demo-trip";
 import type { StreamMessage } from "@/lib/messages";
-import { pointsFor, type MapPoint } from "@/lib/map-points";
+import { pointsFor, routesFor, type MapLine, type MapPoint } from "@/lib/map-points";
 import { averageCost } from "@/lib/money";
 import { readNdjson } from "@/lib/ndjson";
 import type { CandidatePool } from "@/lib/gather";
@@ -63,6 +63,7 @@ export function Pakka() {
           setPool(msg.pool);
           setTurns([]);
           setSelectedId(undefined);
+          setActiveDay(undefined);
         }
       });
     } catch (err) {
@@ -115,7 +116,8 @@ export function Pakka() {
   };
 
   const points = useMemo(() => (itinerary ? pointsFor(itinerary) : match ? matchPoints(match) : []), [itinerary, match]);
-  const lines = useMemo(() => (!itinerary && match ? matchLines(match) : []), [itinerary, match]);
+  const lines = useMemo(() => (itinerary ? routesFor(itinerary) : match ? matchLines(match) : []), [itinerary, match]);
+  const [activeDay, setActiveDay] = useState<number>();
 
   return (
     <div className="grid flex-1 grid-cols-1 lg:min-h-0 lg:grid-cols-[minmax(320px,30%)_1fr_minmax(320px,32%)]">
@@ -169,7 +171,14 @@ export function Pakka() {
               highlighted={!!itinerary.hotel && highlight.has(itinerary.hotel.id)}
               onSelect={() => setSelectedId(itinerary.hotel?.id)}
             />
-            <DayTimeline days={itinerary.days} selectedId={selectedId} highlightIds={highlight} onSelect={setSelectedId} />
+            <DayTimeline
+              days={itinerary.days}
+              selectedId={selectedId}
+              highlightIds={highlight}
+              activeDay={activeDay}
+              onDayClick={(i) => setActiveDay((d) => (d === i ? undefined : i))}
+              onSelect={setSelectedId}
+            />
             <CostSplit itinerary={itinerary} onAsk={chat} busy={chatting || running} />
           </>
         ) : match ? (
@@ -181,7 +190,7 @@ export function Pakka() {
 
       <ReceiptsDrawer receipts={receipts} open={receiptsOpen} onClose={() => setReceiptsOpen(false)} />
       <section className="h-[360px] border-line lg:h-full lg:border-l">
-        <TripMap points={points} lines={lines} selectedId={selectedId} onSelect={setSelectedId} />
+        <TripMap points={points} lines={lines} selectedId={selectedId} activeDay={activeDay} onSelect={setSelectedId} />
       </section>
     </div>
   );
@@ -214,13 +223,20 @@ function matchPoints(m: Match): MapPoint[] {
   return [...homes, ...dests];
 }
 
-function matchLines(m: Match) {
+function matchLines(m: Match): MapLine[] {
   return m.homes.flatMap((h, i) =>
     h.lat === undefined || h.lng === undefined
       ? []
       : m.options
           .filter((o) => o.destination.lat !== undefined && o.destination.lng !== undefined)
-          .map((o) => ({ from: [h.lat!, h.lng!] as [number, number], to: [o.destination.lat!, o.destination.lng!] as [number, number], color: LINE_COLORS[i % LINE_COLORS.length] })),
+          .map((o) => ({
+            points: [
+              [h.lat!, h.lng!],
+              [o.destination.lat!, o.destination.lng!],
+            ] as [number, number][],
+            color: LINE_COLORS[i % LINE_COLORS.length],
+            dashed: true,
+          })),
   );
 }
 
