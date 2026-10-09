@@ -24,7 +24,7 @@ export const SUBMIT_ITINERARY: ToolDef = {
     properties: {
       title: { type: "string", description: "Short, fun trip title" },
       summary: { type: "string", description: "Two sentences about the plan" },
-      hotelId: { type: "string", description: "id of one hotel from the list" },
+      hotelId: { type: "string", description: "id of one hotel from the list, e.g. h3" },
       days: {
         type: "array",
         items: {
@@ -41,7 +41,7 @@ export const SUBMIT_ITINERARY: ToolDef = {
                 additionalProperties: false,
                 required: ["id", "time", "why"],
                 properties: {
-                  id: { type: "string", description: "place: or event: id from the list" },
+                  id: { type: "string", description: "id of a place or event from the list, e.g. p12 or e1" },
                   time: { type: "string", description: "HH:MM, 24-hour" },
                   why: { type: "string", description: "Why this stop, at most 15 words" },
                 },
@@ -89,17 +89,28 @@ export function togetherWindow(flights: FlightPick[]) {
 
 // ---------- Prompt ----------
 
+/**
+ * Claude sees short ids (h3, p12, e1) instead of long Google ids: fewer tokens
+ * and no copying mistakes. They are positions in the pool, so they stay stable
+ * when the chat agent appends new search results.
+ */
+export const alias = {
+  hotel: (i: number) => `h${i + 1}`,
+  place: (i: number) => `p${i + 1}`,
+  event: (i: number) => `e${i + 1}`,
+};
+
 const fmtRating = (r?: number, n?: number) => (r ? `${r}★ (${n ?? 0})` : "no rating");
 const fmtLatLng = (lat: number, lng: number) => `@${lat.toFixed(3)},${lng.toFixed(3)}`;
 
-function placeLine(p: Place): string {
-  return [p.id, p.name, p.category ?? "place", fmtRating(p.rating, p.reviews), p.priceLevel ?? "-", p.address ?? "-", p.hours ?? "-", fmtLatLng(p.lat, p.lng)].join(" | ");
+function placeLine(p: Place, i: number): string {
+  return [alias.place(i), p.name, p.category ?? "place", fmtRating(p.rating, p.reviews), p.priceLevel ?? "-", p.address ?? "-", p.hours ?? "-", fmtLatLng(p.lat, p.lng)].join(" | ");
 }
-function eventLine(e: Event): string {
-  return [e.id, e.title, `event on ${e.date}`, e.dateText ?? "-", e.venue ?? "-", e.address ?? "-"].join(" | ");
+function eventLine(e: Event, i: number): string {
+  return [alias.event(i), e.title, `event on ${e.date}`, e.dateText ?? "-", e.venue ?? "-", e.address ?? "-"].join(" | ");
 }
-function hotelLine(h: Hotel): string {
-  return [h.id, h.name, h.stars ? `${h.stars}-star` : "hotel", fmtRating(h.rating, h.reviews), `${formatINR(h.pricePerNight ?? 0)}/night`, fmtLatLng(h.lat, h.lng)].join(" | ");
+function hotelLine(h: Hotel, i: number): string {
+  return [alias.hotel(i), h.name, h.stars ? `${h.stars}-star` : "hotel", fmtRating(h.rating, h.reviews), `${formatINR(h.pricePerNight ?? 0)}/night`, fmtLatLng(h.lat, h.lng)].join(" | ");
 }
 
 export function tripDates(trip: Pick<TripInput, "startDate" | "endDate">): string[] {
@@ -118,7 +129,7 @@ export function poolPrompt(pool: CandidatePool, trip: TripInput, flights: Flight
   const budgetLine = trip.budgetPerPerson
     ? `Budget ${formatINR(trip.budgetPerPerson)} per person. Flights already cost up to ${formatINR(flightCost)} per person, so the hotel should cost at most about ${formatINR(Math.max(0, ((trip.budgetPerPerson - flightCost) * trip.squad.length) / (rooms * nights)))} per room per night.`
     : "No fixed budget; prefer good value.";
-  const events = pool.events.filter((e) => inTrip(e, trip));
+  const events = pool.events.map((e, i) => ({ e, i })).filter(({ e }) => inTrip(e, trip));
 
   return [
     `Trip: ${trip.squad.length} friends (${trip.squad.map((p) => `${p.name} from ${p.city}`).join(", ")}) to ${trip.destination}, ${trip.startDate} to ${trip.endDate}. ${nights} nights, ${rooms} rooms.`,
@@ -135,35 +146,49 @@ export function poolPrompt(pool: CandidatePool, trip: TripInput, flights: Flight
     ...pool.places.map(placeLine),
     "",
     events.length ? "EVENTS DURING THE TRIP (id | title | date | when | venue | address):" : "EVENTS: none found during these dates.",
-    ...events.map(eventLine),
+    ...events.map(({ e, i }) => eventLine(e, i)),
   ].join("\n");
 }
 
 export const PLANNER_SYSTEM = `You are Pakka's trip planner. You arrange a group trip using ONLY the candidates listed by search. You never invent places, hotels, events, prices, ratings or times.
 
 Rules:
-- Use only ids copied exactly from the lists. Never make up an id or a place.
+- Use only ids from the lists (like h3, p12, e1). Never make up an id or a place.
 - Pick one hotel (hotelId) that fits the budget and has a good rating.
 - 3–5 stops on full days, fewer on arrival and departure days.
 - Nothing before the squad is together on the first day, nothing after they must leave for the airport on the last day. If the squad lands at night, day 1 can be just dinner or nothing.
 - Keep each day's stops close together (use the @lat,lng). Mix sights and food: a meal around lunch and dinner on full days.
 - Include an event if one falls on the trip dates and suits the squad.
-- Each "why" is at most 15 words, about why it suits this squad. Don't state prices, ratings or hours in it.
+- Each "why" is at most 15 words, about why it suits this squad.
+- Never write prices, ratings, hours or other numbers in the title, summary, day titles or "why"; the app shows those from search.
 - Use each place at most once.`;
 
 // ---------- Grounding ----------
 
 type Lookup = { places: Map<string, Place>; events: Map<string, Event>; hotels: Map<string, Hotel> };
 
+/** Real ids and short aliases both resolve to the candidate. */
 export function lookupFor(pool: CandidatePool): Lookup {
+  const index = <T extends { id: string }>(items: T[], short: (i: number) => string) =>
+    new Map(items.flatMap((x, i) => [[x.id, x] as const, [short(i), x] as const]));
   return {
-    places: new Map(pool.places.map((p) => [p.id, p])),
-    events: new Map(pool.events.map((e) => [e.id, e])),
-    hotels: new Map(pool.hotels.map((h) => [h.id, h])),
+    places: index(pool.places, alias.place),
+    events: index(pool.events, alias.event),
+    hotels: index(pool.hotels, alias.hotel),
   };
 }
 
 const clipWords = (s: string, n: number) => s.split(/\s+/).slice(0, n).join(" ");
+
+/**
+ * Claude's words are never shown as facts: drop any sentence that states a
+ * number or price (the app shows those from search), keep at most two.
+ */
+const HAS_FACT = /[₹$]|\d/;
+export function sanitizeText(text: string, maxSentences = 2): string {
+  const sentences = text.match(/[^.!?]+[.!?]*/g) ?? [];
+  return sentences.map((x) => x.trim()).filter((x) => x && !HAS_FACT.test(x)).slice(0, maxSentences).join(" ");
+}
 const validTime = (t: string) => (/^\d{1,2}:\d{2}$/.test(t) ? t.padStart(5, "0") : "12:00");
 
 export type Grounded = {
@@ -192,19 +217,22 @@ export function groundDraft(draft: PlanDraft, pool: CandidatePool, trip: TripInp
     for (const s of d?.stops ?? []) {
       const place = lookup.places.get(s.id);
       const event = lookup.events.get(s.id);
-      if ((!place && !event) || seen.has(s.id)) {
-        if (!seen.has(s.id)) removed.push(s.id);
+      const item = place ?? event;
+      if (!item) {
+        removed.push(s.id);
         daysToFix.add(date);
         continue;
       }
-      seen.add(s.id);
-      const base = { time: validTime(s.time), why: clipWords(s.why, 15) };
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      const base = { time: validTime(s.time), why: sanitizeText(clipWords(s.why, 15), 1) };
       stops.push(place ? { kind: "place", ...base, item: place } : { kind: "event", ...base, item: event! });
     }
     stops.sort((a, b) => a.time.localeCompare(b.time));
     // A middle day with nothing on it needs fixing; travel days may be light.
     if (!stops.length && date !== dates[0] && date !== dates.at(-1)) daysToFix.add(date);
-    return { date, title: d?.title ?? "Free day", stops };
+    const title = d?.title && !/[₹$]/.test(d.title) ? d.title : "Free day";
+    return { date, title, stops };
   });
   for (const d of draft.days) if (!dates.includes(d.date)) daysToFix.add(d.date);
 
@@ -267,8 +295,10 @@ export function assembleItinerary(args: {
     stops.filter((s) => lookup.places.has(s.item.id) || lookup.events.has(s.item.id)).length;
 
   return {
-    title: draft.title,
-    summary: draft.summary,
+    title: HAS_FACT.test(draft.title) ? `${trip.destination} with the squad` : draft.title,
+    summary:
+      sanitizeText(draft.summary) ||
+      `${grounded.days.filter((d) => d.stops.length).map((d) => d.title).join(", then ")}.`,
     trip,
     flights,
     arrivalWindow: args.arrivalWindow,

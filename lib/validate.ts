@@ -23,5 +23,6 @@ export function parseTripInput(body: unknown): TripInput | string {
     endDate,
     interests: Array.isArray(b.interests) ? b.interests.map(String).slice(0, 6) : [],
     budgetPerPerson: Number(b.budgetPerPerson) > 0 ? Number(b.budgetPerPerson) : undefined,
+    destinationAirport: /^[A-Z]{3}(,[A-Z]{3})*$/.test(String(b.destinationAirport ?? "")) ? String(b.destinationAirport) : undefined,
   };
 }

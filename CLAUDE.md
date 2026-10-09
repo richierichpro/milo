@@ -13,7 +13,7 @@ Pakka is an AI trip planner laid out like Layla.ai (chat on the left, trip plan 
 - Money is INR. Always send currency=INR, gl=in, hl=en. Format as ₹12,345 with en-IN grouping.
 - Flights are always searched with adults=1, one leg at a time (type=2, one way). We multiply by the number of people ourselves.
 - Hotels are searched with adults=2. Rooms = ceil(squad size / 2).
-- All SerpApi calls go through lib/serpapi.ts (disk cache, demo mode, call log). All Claude calls go through lib/claude.ts, and the model comes from CLAUDE_MODEL.
+- All SerpApi calls go through lib/serpapi.ts (disk cache, demo mode, call log). All Claude calls go through lib/claude.ts, and the model comes from CLAUDE_MODEL. Default is claude-haiku-5-5 (chosen for cost; the grounding check makes a smaller model safe). lib/claude.ts caches every response in .cache/claude/ by request hash. Current models reject forced tool_choice, so callTool uses auto + strict tools.
 - API keys stay on the server. Route handlers use runtime = "nodejs".
 - No database, no login, no payments. Plan state lives in the browser.
 - Small, focused files. TypeScript strict. `any` only where raw SerpApi JSON is parsed.

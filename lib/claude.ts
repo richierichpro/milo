@@ -6,7 +6,7 @@ import path from "node:path";
 let client: Anthropic | null = null;
 const getClient = () => (client ??= new Anthropic());
 
-export const model = () => process.env.CLAUDE_MODEL || "claude-sonnet-5-5";
+export const model = () => process.env.CLAUDE_MODEL || "claude-haiku-5-5";
 
 export type ToolDef = Anthropic.Tool;
 

@@ -50,3 +50,22 @@ test("a duplicate stop is dropped", () => {
   const g = groundDraft(draft, pool, trip);
   assert.equal(g.days[1].stops.length, 1);
 });
+
+test("short ids resolve to the real candidates, made-up short ids don't", () => {
+  const draft: PlanDraft = {
+    title: "t", summary: "s", hotelId: "h1",
+    days: [{ date: "2026-11-21", title: "d", stops: [{ id: "p2", time: "10:00", why: "x" }, { id: "p99", time: "12:00", why: "y" }] }],
+  };
+  const g = groundDraft(draft, pool, trip);
+  assert.equal(g.hotel?.id, "hotel:real");
+  assert.equal(g.days[1].stops[0].item.id, "place:b");
+  assert.deepEqual(g.removed, ["p99"]);
+});
+
+test("Claude's text loses sentences that state prices or numbers", async () => {
+  const { sanitizeText } = await import("../lib/planner");
+  assert.equal(
+    sanitizeText("Beaches and seafood all weekend. The hotel is ₹2,049 a night. Ends with a big night out in Baga."),
+    "Beaches and seafood all weekend. Ends with a big night out in Baga.",
+  );
+});

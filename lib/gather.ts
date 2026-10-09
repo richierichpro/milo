@@ -23,7 +23,8 @@ export async function gatherCandidates(input: TripInput, onProgress?: (text: str
   const receipts: CallLogEntry[] = [];
   const errors: string[] = [];
   const dest = input.destination.trim();
-  const destAirport = resolveAirport(dest);
+  // Our own lookup first (it knows Goa has two airports); Squad Match's code otherwise.
+  const destAirport = resolveAirport(dest) ?? (input.destinationAirport ? { codes: input.destinationAirport } : null);
   if (!destAirport) throw new Error(`Pakka doesn't know the airport for "${dest}" yet.`);
 
   const run = async <T>(label: string, params: SerpParams, parse: (json: any) => T, empty: T): Promise<T> => {

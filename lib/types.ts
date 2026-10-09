@@ -96,6 +96,8 @@ export type TripInput = {
   endDate: string;
   interests: string[];
   budgetPerPerson?: number;
+  /** IATA code(s) from Squad Match, for destinations not in our airport list. */
+  destinationAirport?: string;
 };
 
 export type FlightPick = { person: string; city: string; out?: Flight; back?: Flight };
@@ -124,4 +126,22 @@ export type Itinerary = {
   verification: Verification;
   costs: CostLine[];
   createdAt: string;
+};
+
+export type DestinationOption = {
+  destination: Destination;
+  /** Per person: round-trip flight from their city + hotel share. */
+  perPerson: { person: string; city: string; flight: number; hotelShare: number; total: number; withinBudget: boolean }[];
+  /** Median nightly price of the destination's rated hotels on Google Hotels. */
+  hotelPerNight?: number;
+  groupTotal: number;
+  fairnessGap: number;
+  withinBudget: number;
+};
+
+export type SquadMatch = {
+  options: DestinationOption[];
+  /** Friendly note when too few destinations work for everyone. */
+  message?: string;
+  homes: { person: string; city: string; code: string; lat?: number; lng?: number }[];
 };

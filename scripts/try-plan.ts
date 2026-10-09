@@ -2,13 +2,14 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { DEMO_TRIP } from "../lib/demo-trip";
 import { gatherCandidates } from "../lib/gather";
 import { averageCost, formatINR } from "../lib/money";
+import { pickSquadFlights } from "../lib/land-together";
 import { planTrip } from "../lib/planner";
 
 async function main() {
   const pool = await gatherCandidates(DEMO_TRIP);
   const live = pool.receipts.filter((r) => r.source === "live").length;
   console.log(`Gathered (${pool.receipts.length} searches, ${live} live). Asking Claude…`);
-  const it = await planTrip(pool, DEMO_TRIP);
+  const it = await planTrip(pool, DEMO_TRIP, { pickFlights: (p, t) => pickSquadFlights(p.flightsOut, p.flightsBack, t.squad) });
   // Saved so later steps can reuse this plan without another Claude call.
   await mkdir(".cache", { recursive: true });
   await writeFile(".cache/last-plan.json", JSON.stringify({ itinerary: it, pool }));
@@ -16,6 +17,7 @@ async function main() {
   console.log(`\n${it.title}\n${it.summary}\n`);
   for (const f of it.flights)
     console.log(`✈ ${f.person}: ${f.out?.from}→${f.out?.to} ${f.out?.departTime}→${f.out?.arriveTime.slice(11)} | back ${f.back?.departTime} (${formatINR((f.out?.pricePerPerson ?? 0) + (f.back?.pricePerPerson ?? 0))})`);
+  if (it.arrivalWindow) console.log(`Everyone lands between ${it.arrivalWindow.first.slice(11)} and ${it.arrivalWindow.last.slice(11)} · ${formatINR(it.arrivalWindow.extraVsCheapest)} more than the cheapest scattered flights`);
   console.log(`🏨 ${it.hotel?.name} · ${formatINR(it.hotel?.pricePerNight ?? 0)}/night × ${it.nights} nights × ${it.rooms} rooms`);
   it.days.forEach((d, i) => {
     console.log(`\nDay ${i + 1} · ${d.date} · ${d.title}`);
