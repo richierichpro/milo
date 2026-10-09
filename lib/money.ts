@@ -1,4 +1,4 @@
-import type { CostLine, FlightPick, Hotel } from "./types";
+import type { CostLine, FlightPick, Hotel, Stop } from "./types";
 
 const inr = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
 
@@ -48,13 +48,20 @@ export type ActivityCosts = {
   stops: number;
 };
 
+/** What one stop costs per person, from what Google lists: entry ticket, else typical spend. */
+export function stopPrice(stop: Stop): PriceRange | undefined {
+  if (stop.kind !== "place") return undefined;
+  const entry = stop.item.prices?.admission[0];
+  if (entry) return { min: entry.price, max: entry.price };
+  return parsePriceRange(stop.item.prices?.priceRange) ?? parsePriceRange(stop.item.priceLevel);
+}
+
 /** Per-person total of the prices Google lists for the plan's stops. Unlisted stops are counted, not guessed. */
-export function activityCosts(prices: (string | undefined)[]): ActivityCosts {
+export function activityCosts(prices: (PriceRange | undefined)[]): ActivityCosts {
   let min = 0;
   let max: number | undefined = 0;
   let priced = 0;
-  for (const p of prices) {
-    const r = parsePriceRange(p);
+  for (const r of prices) {
     if (!r) continue;
     priced++;
     min += r.min;

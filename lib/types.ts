@@ -55,6 +55,21 @@ export type Place = {
   thumbnail?: string;
   description?: string;
   mapsUrl: string;
+  /** From a Google Maps place-details lookup (admission tickets, tours). */
+  prices?: PlacePrices;
+};
+
+export type TicketOption = { title: string; price: number; priceText: string; link?: string; official?: boolean };
+export type TourOption = { title: string; price: number; priceText: string; link?: string; provider?: string; rating?: number; reviews?: number };
+
+export type PlacePrices = {
+  source: Source;
+  /** Entry tickets, cheapest first. */
+  admission: TicketOption[];
+  /** Bookable tours that include the place, cheapest first. Optional extras, not entry. */
+  tours: TourOption[];
+  /** Typical spend per person, e.g. "₹400–800" (mostly restaurants). */
+  priceRange?: string;
 };
 
 export type Event = {

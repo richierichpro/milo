@@ -4,6 +4,32 @@ import type { Stop } from "@/lib/types";
 import { Photo } from "./Photo";
 import { ProofLine } from "./ProofLine";
 import { Rating } from "./Rating";
+import type { PlacePrices } from "@/lib/types";
+
+/** "Entry ₹250 · official ↗ · Tours from ₹599 ↗", only what Google lists. */
+function PriceLine({ prices }: { prices?: PlacePrices }) {
+  const entry = prices?.admission[0];
+  const tour = prices?.tours[0];
+  if (!entry && !tour) return null;
+  const link = "font-semibold text-teal hover:underline";
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
+  return (
+    <p className="mt-1 flex flex-wrap gap-x-3 text-sm">
+      {entry && (
+        <a href={entry.link} target="_blank" rel="noreferrer" onClick={stop} className={link}>
+          Entry {entry.priceText.replace(/\.00$/, "")}
+          {entry.official ? " · official" : ""} ↗
+        </a>
+      )}
+      {tour && (
+        <a href={tour.link} target="_blank" rel="noreferrer" onClick={stop} className="text-muted hover:text-teal hover:underline">
+          Tours from {tour.priceText}
+          {tour.provider ? ` · ${tour.provider}` : ""} ↗
+        </a>
+      )}
+    </p>
+  );
+}
 
 export function StopCard({
   stop,
@@ -43,8 +69,11 @@ export function StopCard({
         <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted">
           {sub && <span>{sub}</span>}
           {isPlace && <Rating rating={stop.item.rating} reviews={stop.item.reviews} />}
-          {isPlace && stop.item.priceLevel && <span>{stop.item.priceLevel} per person</span>}
+          {isPlace && !stop.item.prices?.admission.length && (stop.item.prices?.priceRange ?? stop.item.priceLevel) && (
+            <span>{stop.item.prices?.priceRange ?? stop.item.priceLevel} per person</span>
+          )}
         </p>
+        {isPlace && <PriceLine prices={stop.item.prices} />}
         {stop.why && (
           <p className="mt-1 text-sm text-ink/80">
             <span className="text-teal">Pakka&apos;s note:</span> {stop.why}

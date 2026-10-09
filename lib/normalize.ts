@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- raw SerpApi JSON is parsed here */
 import { createHash } from "node:crypto";
-import type { Destination, Event, Flight, Hotel, Place, Source } from "./types";
+import type { Destination, Event, Flight, Hotel, Place, PlacePrices, Source, TicketOption, TourOption } from "./types";
 
 // Raw SerpApi JSON is parsed here and nowhere else. Missing fields become
 // undefined; items we can't place on a map or price are skipped.
@@ -182,4 +182,29 @@ export function normalizeDestinations(json: any): Destination[] {
     });
   }
   return out;
+}
+
+/** Google Maps place details → entry tickets, tours and typical spend. */
+export function normalizePlacePrices(json: any): PlacePrices {
+  const r = json?.place_results ?? {};
+  const src = source(json, "google_maps", str(r?.place_id) ? `https://www.google.com/maps/place/?q=place_id:${r.place_id}` : undefined);
+  const admission: TicketOption[] = [];
+  for (const group of Array.isArray(r?.admission) ? r.admission : []) {
+    for (const o of Array.isArray(group?.options) ? group.options : []) {
+      const price = num(o?.extracted_price);
+      const title = str(o?.title);
+      if (price === undefined || !title) continue;
+      admission.push({ title, price, priceText: str(o?.price) ?? `₹${price}`, link: str(o?.link), official: o?.official_site === true });
+    }
+  }
+  const tours: TourOption[] = [];
+  for (const e of Array.isArray(r?.experiences) ? r.experiences : []) {
+    const price = num(e?.extracted_price);
+    const title = str(e?.title);
+    if (price === undefined || !title) continue;
+    tours.push({ title, price, priceText: str(e?.price) ?? `₹${price}`, link: str(e?.link), provider: str(e?.source), rating: num(e?.rating), reviews: num(e?.reviews) });
+  }
+  const byPrice = <T extends { price: number }>(xs: T[]) => xs.sort((a, b) => a.price - b.price);
+  const range = str(r?.price);
+  return { source: src, admission: byPrice(admission), tours: byPrice(tours), priceRange: range?.includes("₹") ? range : undefined };
 }

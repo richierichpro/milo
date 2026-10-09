@@ -3,6 +3,7 @@ import { primaryCode, resolveAirport } from "./airports";
 import { createMessage, type ToolDef } from "./claude";
 import { inTrip, type CandidatePool } from "./gather";
 import { pickSquadFlights, selectFlightOptions } from "./land-together";
+import { addPrices } from "./prices";
 import { averageCost, formatINR } from "./money";
 import { normalizeEvents, normalizeFlights, normalizeHotels, normalizePlaces } from "./normalize";
 import {
@@ -267,10 +268,11 @@ export async function editPlan(
           arrivalWindow: picked.arrivalWindow,
           pool,
         });
+        const priced = await addPrices(next, pool, receipts, onProgress);
         const delta = averageCost(next.costs) - averageCost(itinerary.costs);
         const note = [...describeChanges(itinerary, next), sanitizeText(draft.changeNote)].filter(Boolean).join(" ") || "Updated the plan.";
         const money = delta === 0 ? "Cost per person is unchanged." : `${delta < 0 ? "Saves" : "Adds"} ${formatINR(Math.abs(delta))} per person on average.`;
-        done = { itinerary: next, pool, receipts, text: `${note} ${money}` };
+        done = { itinerary: priced, pool, receipts, text: `${note} ${money}` };
         results.push({ type: "tool_result", tool_use_id: call.id, content: "Accepted." });
         continue;
       }

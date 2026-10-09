@@ -62,9 +62,10 @@ flowchart LR
 | `google_flights` | One-way flights per person and direction (`type=2`, `adults=1`), plus time windows (`outbound_times`) and nonstop filters for chat edits |
 | `google_hotels` | Hotels for the group (2 adults per room), sorted by rating or price, with price caps for "make it cheaper" |
 | `google_maps` | Attractions, restaurants, cafes and each interest ("best nightlife in Goa"), plus anything a chat edit asks for |
+| `google_maps` place details (`place_id`) | Entry ticket prices (e.g. Fort Aguada ₹250, official ASI site), bookable tours and typical spend, but only for the stops in the final plan; beaches and already-priced restaurants are skipped |
 | `google` (`events_results`) | Events in the city, kept only when they fall on the trip dates |
 
-All calls go through [lib/serpapi.ts](lib/serpapi.ts), which caches every response on disk, supports demo mode and logs the receipts. A full squad plan uses about 16 searches. A Squad Match adds about 10.
+All calls go through [lib/serpapi.ts](lib/serpapi.ts), which caches every response on disk, supports demo mode and logs the receipts. A full squad plan uses about 16 searches plus about 10 price lookups. A Squad Match adds about 10.
 
 ## Run it
 

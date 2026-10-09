@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { DEMO_TRIP } from "../lib/demo-trip";
 import { gatherCandidates } from "../lib/gather";
-import { averageCost, formatINR } from "../lib/money";
+import { activityCosts, averageCost, formatINR, formatRange, stopPrice } from "../lib/money";
 import { duration, stopsLabel } from "../lib/format";
 import { airportSplitNote, pickSquadFlights } from "../lib/land-together";
 import { planTrip } from "../lib/planner";
@@ -28,12 +28,18 @@ async function main() {
   console.log(`🏨 ${it.hotel?.name} · ${formatINR(it.hotel?.pricePerNight ?? 0)}/night × ${it.nights} nights × ${it.rooms} rooms · ≈ ${it.hotelDistanceKm?.toFixed(1)} km from most of the plan`);
   it.days.forEach((d, i) => {
     console.log(`\nDay ${i + 1} · ${d.date} · ${d.title}${d.approxKm !== undefined ? ` · ≈ ${d.approxKm} km` : ""}`);
-    for (const s of d.stops) console.log(`  ${s.time}  ${s.kind === "place" ? s.item.name : s.item.title}  — ${s.why}`);
+    for (const s of d.stops) {
+      const r = stopPrice(s);
+      const tour = s.kind === "place" ? s.item.prices?.tours[0] : undefined;
+      console.log(`  ${s.time}  ${s.kind === "place" ? s.item.name : s.item.title}${r ? ` [${formatRange(r)}]` : ""}${tour ? ` (tours from ${tour.priceText})` : ""}  — ${s.why}`);
+    }
   });
   const v = it.verification;
   console.log(`\nVerified ${v.verified}/${v.total} items against live search${v.removed.length ? ` · removed: ${v.removed.join(", ")}` : ""}`);
   for (const c of it.costs) console.log(`  ${c.person}: flights ${formatINR(c.flights)} + hotel ${formatINR(c.hotelShare)} = ${formatINR(c.total)}`);
   console.log(`Average ${formatINR(averageCost(it.costs))} per person`);
+  const acts = activityCosts(it.days.flatMap((d) => d.stops).map(stopPrice));
+  console.log(`Food & activities where Google lists a price: ${acts.priced ? formatRange(acts) : "-"} each (${acts.priced} of ${acts.stops} stops)`);
 }
 
 main().catch((e) => {

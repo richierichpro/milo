@@ -1,6 +1,7 @@
 import { callTool, type ToolDef } from "./claude";
 import { inTrip, type CandidatePool } from "./gather";
 import { costSplit, formatINR, nightsBetween, roomsFor } from "./money";
+import { addPrices } from "./prices";
 import { approxRouteKm, centreOf, haversineKm, typicalDistanceKm, type LatLng } from "./geo";
 import type { Day, Event, FlightPick, Hotel, Itinerary, Place, Stop, TripInput } from "./types";
 
@@ -289,7 +290,8 @@ export async function planTrip(pool: CandidatePool, trip: TripInput, opts: PlanO
     removed.push(...grounded.removed.filter((id) => !removed.includes(id)));
   }
 
-  return assembleItinerary({ draft, grounded, removed, trip, flights, arrivalWindow, pool });
+  const itinerary = assembleItinerary({ draft, grounded, removed, trip, flights, arrivalWindow, pool });
+  return addPrices(itinerary, pool, pool.receipts, opts.onProgress);
 }
 
 const roundUp15 = (hhmm: string) => {

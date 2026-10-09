@@ -45,6 +45,11 @@ export function hotelParams(
   };
 }
 
+/** One place's details: admission prices, tours, price range. */
+export function placeDetailsParams(placeId: string): SerpParams {
+  return { engine: "google_maps", place_id: placeId, ...LOCALE };
+}
+
 export function mapsParams(q: string): SerpParams {
   return { engine: "google_maps", type: "search", q, ...LOCALE };
 }
