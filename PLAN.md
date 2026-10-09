@@ -4,7 +4,7 @@
 - [x] 0 Setup
 - [x] 1 SerpApi client
 - [x] 2 Types and normalizers
-- [ ] 3 Gather a trip
+- [x] 3 Gather a trip
 - [ ] 4 Grounded planner
 - [ ] 5 Main screen  (STOP after this for my review)
 - [ ] 6 Squad Match (hero)
