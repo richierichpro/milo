@@ -12,6 +12,7 @@ import type { CallLogEntry, DestinationOption, Itinerary, SquadMatch as Match, T
 import { ArrivalTimeline } from "./ArrivalTimeline";
 import { ChatBox, type ChatTurn } from "./ChatBox";
 import { CostSplit } from "./CostSplit";
+import { DayButtons } from "./DayButtons";
 import { DayTimeline } from "./DayTimeline";
 import { FlightsSection } from "./FlightsSection";
 import { HotelCard } from "./HotelCard";
@@ -121,6 +122,12 @@ export function Pakka() {
   const points = useMemo(() => (itinerary ? pointsFor(itinerary) : match ? matchPoints(match) : []), [itinerary, match]);
   const lines = useMemo(() => (itinerary ? routesFor(itinerary) : match ? matchLines(match) : []), [itinerary, match]);
   const [activeDay, setActiveDay] = useState<number>();
+  const [playKey, setPlayKey] = useState(0);
+  /** Show one day on the map and play its route (clicking it again replays). */
+  const showDay = (i: number | undefined) => {
+    setActiveDay(i);
+    setPlayKey((k) => k + 1);
+  };
 
   return (
     <div className="grid flex-1 grid-cols-1 lg:min-h-0 lg:grid-cols-[minmax(320px,30%)_1fr_minmax(320px,32%)]">
@@ -183,7 +190,7 @@ export function Pakka() {
               selectedId={selectedId}
               highlightIds={highlight}
               activeDay={activeDay}
-              onDayClick={(i) => setActiveDay((d) => (d === i ? undefined : i))}
+              onDayClick={(i) => showDay(activeDay === i ? undefined : i)}
               onSelect={setSelectedId}
             />
             <CostSplit itinerary={itinerary} onAsk={chat} busy={chatting || running} />
@@ -196,8 +203,9 @@ export function Pakka() {
       </main>
 
       <ReceiptsDrawer receipts={receipts} open={receiptsOpen} onClose={() => setReceiptsOpen(false)} />
-      <section className="h-[360px] border-line lg:h-full lg:border-l">
-        <TripMap points={points} lines={lines} selectedId={selectedId} activeDay={activeDay} onSelect={setSelectedId} />
+      <section className="relative h-[360px] border-line lg:h-full lg:border-l">
+        {itinerary && <DayButtons days={itinerary.days} active={activeDay} onPick={showDay} />}
+        <TripMap points={points} lines={lines} selectedId={selectedId} activeDay={activeDay} playKey={playKey} onSelect={setSelectedId} />
       </section>
     </div>
   );
