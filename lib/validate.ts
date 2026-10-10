@@ -11,6 +11,7 @@ export function parseTripInput(body: unknown): TripInput | string {
     .filter((p) => p.name && p.city)
     .slice(0, 8);
   if (!squad.length) return "Add at least one person with a home city.";
+  if (!String(b.destination ?? "").trim()) return "Pick where you're going.";
   if (new Set(squad.map((p) => p.name.toLowerCase())).size !== squad.length) return "Each person needs a different name.";
   const startDate = String(b.startDate ?? "");
   const endDate = String(b.endDate ?? "");
@@ -23,6 +24,5 @@ export function parseTripInput(body: unknown): TripInput | string {
     endDate,
     interests: Array.isArray(b.interests) ? b.interests.map(String).slice(0, 6) : [],
     budgetPerPerson: Number(b.budgetPerPerson) > 0 ? Number(b.budgetPerPerson) : undefined,
-    destinationAirport: /^[A-Z]{3}(,[A-Z]{3})*$/.test(String(b.destinationAirport ?? "")) ? String(b.destinationAirport) : undefined,
   };
 }

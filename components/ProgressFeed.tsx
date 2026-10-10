@@ -1,37 +1,23 @@
-"use client";
+/** Turns the server's step messages into one friendly line; search details stay hidden. */
+export function friendlyStep(text: string): string {
+  if (/flight|land together|lining up/i.test(text)) return "Finding flights for everyone…";
+  if (/hotel/i.test(text)) return "Finding a place to stay…";
+  if (/maps|places/i.test(text)) return "Finding things to do and places to eat…";
+  if (/event/i.test(text)) return "Checking what's on…";
+  if (/ticket|price/i.test(text)) return "Checking ticket prices…";
+  if (/checking every item|verif/i.test(text)) return "Double-checking everything…";
+  if (/claude|arrang|fix|reconsider/i.test(text)) return "Putting your days together…";
+  return "Planning your trip…";
+}
 
-import { useState } from "react";
-
+/** A single status line while planning; nothing once the plan is ready. */
 export function ProgressFeed({ lines, running }: { lines: string[]; running: boolean }) {
-  const [open, setOpen] = useState(false);
-  if (!lines.length) return null;
-  const collapsed = !running && !open;
-
+  if (!running) return null;
+  const last = lines.at(-1);
   return (
-    <div className="rounded-2xl bg-white/70 p-3 text-sm">
-      {!running && (
-        <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between text-left font-semibold text-ok" aria-expanded={open}>
-          <span>✓ Your plan is ready</span>
-          <span className="text-xs font-normal text-muted">{open ? "Hide steps" : "Show steps"}</span>
-        </button>
-      )}
-      {!collapsed && (
-        <ol className={`space-y-1 ${running ? "" : "mt-2"}`}>
-          {lines.map((line, i) => {
-            const newest = running && i === lines.length - 1;
-            return (
-              <li key={i} className={`flex items-center gap-2 ${newest ? "text-ink" : "text-muted"}`}>
-                {newest ? (
-                  <span className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-teal border-t-transparent" />
-                ) : (
-                  <span className="w-3 shrink-0 text-center text-ok">✓</span>
-                )}
-                <span>{line}</span>
-              </li>
-            );
-          })}
-        </ol>
-      )}
+    <div className="flex items-center gap-2 rounded-2xl bg-white/70 p-3 text-sm" role="status" aria-live="polite">
+      <span className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-teal border-t-transparent" />
+      <span>{last ? friendlyStep(last) : "Planning your trip…"}</span>
     </div>
   );
 }

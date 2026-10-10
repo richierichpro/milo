@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatINR } from "@/lib/money";
+import { friendlyStep } from "./ProgressFeed";
 
 export type ChatTurn =
   | { role: "user"; text: string }
@@ -28,13 +29,13 @@ export function ChatBox({ turns, busy, onSend }: { turns: ChatTurn[]; busy: bool
             </p>
           ) : (
             <div key={i} className={`mr-4 rounded-2xl rounded-bl-sm border px-3 py-2 text-sm ${t.error ? "border-coral/40 bg-coral/10" : "border-line bg-white"}`}>
-              {t.tools.map((line, j) => (
-                <p key={j} className="flex items-center gap-2 text-xs text-muted">
-                  {t.pending && j === t.tools.length - 1 && <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-teal border-t-transparent" />}
-                  {line}
+              {t.pending && (
+                <p className="flex items-center gap-2 text-xs text-muted">
+                  <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-teal border-t-transparent" />
+                  {t.tools.length ? friendlyStep(t.tools[t.tools.length - 1]) : "Thinking…"}
                 </p>
-              ))}
-              {t.text && <p className={t.tools.length ? "mt-1" : ""}>{t.text}</p>}
+              )}
+              {t.text && <p>{t.text}</p>}
               {t.delta !== undefined && t.delta !== 0 && (
                 <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${t.delta < 0 ? "bg-ok/10 text-ok" : "bg-coral/10 text-coral"}`}>
                   {t.delta < 0 ? "−" : "+"}

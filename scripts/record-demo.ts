@@ -7,7 +7,6 @@ import { gatherCandidates } from "../lib/gather";
 import { pickSquadFlights } from "../lib/land-together";
 import { parseTripInput } from "../lib/validate";
 import { planTrip } from "../lib/planner";
-import { findDestinations } from "../lib/squad";
 import type { CallLogEntry, TripInput } from "../lib/types";
 
 const CHIPS = ["Make it cheaper", "Kabir can't leave Delhi before 6pm Friday", "Add a sunset cruise", "Make day 2 more adventurous"];
@@ -16,29 +15,20 @@ async function main() {
   process.env.RECORD_DEMO = "true";
   const log: CallLogEntry[] = [];
   // Same shape the browser sends, so requests (and recordings) match exactly.
-  const blank = parseTripInput({ ...DEMO_TRIP, destination: "" }) as TripInput;
+  const trip = parseTripInput(DEMO_TRIP) as TripInput;
 
-  console.log("1. Squad Match with no destination");
-  const match = await findDestinations(blank.squad, blank.startDate, blank.endDate, blank.budgetPerPerson, { log });
-  const goa = match.options.find((o) => o.destination.name === "Goa");
-  if (!goa) throw new Error("Goa isn't in the Squad Match results; pick another destination for the demo.");
-
-  console.log("2. Plan Goa");
-  const trip = parseTripInput({ ...blank, destination: goa.destination.name, destinationAirport: goa.destination.airportCode }) as TripInput;
+  console.log("1. Plan Goa");
   const pool = await gatherCandidates(trip);
   log.push(...pool.receipts);
   const itinerary = await planTrip(pool, trip, { pickFlights: (p, t) => pickSquadFlights(p.flightsOut, p.flightsBack, t.squad) });
   console.log(`   ${itinerary.title} · verified ${itinerary.verification.verified}/${itinerary.verification.total}`);
 
-  // Also record the plan for a typed-in "Goa" (no Squad Match first).
-  const typed = parseTripInput(DEMO_TRIP) as TripInput;
-  await planTrip(await gatherCandidates(typed), typed, { pickFlights: (p, t) => pickSquadFlights(p.flightsOut, p.flightsBack, t.squad) });
 
   // The cost split's "Find <name> cheaper flights" buttons, for everyone over budget.
   const budget = trip.budgetPerPerson ?? Infinity;
   const callouts = itinerary.costs.filter((c) => c.total > budget).map((c) => `Find ${c.person} cheaper flights`);
   for (const [i, chip] of [...CHIPS, ...callouts].entries()) {
-    console.log(`${3 + i}. Chat: ${chip}`);
+    console.log(`${2 + i}. Chat: ${chip}`);
     try {
       const r = await editPlan(itinerary, pool, chip, (t) => console.log(`   ${t}`));
       log.push(...r.receipts);

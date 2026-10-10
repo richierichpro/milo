@@ -55,7 +55,7 @@ export function TripForm({
 
       <label className="block space-y-1">
         <span className="text-sm font-semibold">Where to?</span>
-        <input className={field} placeholder="Leave empty and Pakka finds a place" value={value.destination} onChange={(e) => set("destination", e.target.value)} />
+        <input className={field} required placeholder="e.g. Goa, Udaipur, Manali" value={value.destination} onChange={(e) => set("destination", e.target.value)} />
       </label>
 
       <div className="flex gap-2">

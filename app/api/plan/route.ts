@@ -3,8 +3,6 @@ import type { StreamMessage } from "@/lib/messages";
 import { ndjsonResponse } from "@/lib/ndjson";
 import { pickSquadFlights } from "@/lib/land-together";
 import { planTrip } from "@/lib/planner";
-import { findDestinations } from "@/lib/squad";
-import type { CallLogEntry } from "@/lib/types";
 import { parseTripInput } from "@/lib/validate";
 
 export const runtime = "nodejs";
@@ -15,13 +13,6 @@ export async function POST(req: Request) {
 
   return ndjsonResponse<StreamMessage>(async (send) => {
     const progress = (text: string) => send({ type: "progress", text });
-    if (!trip.destination) {
-      // Squad Match: where can everyone afford to go?
-      const receipts: CallLogEntry[] = [];
-      const match = await findDestinations(trip.squad, trip.startDate, trip.endDate, trip.budgetPerPerson, { log: receipts, onProgress: progress });
-      send({ type: "destinations", match, receipts });
-      return;
-    }
     const pool = await gatherCandidates(trip, progress);
     for (const e of pool.errors) send({ type: "progress", text: `⚠ ${e}` });
     progress("Lining up flights so everyone lands together…");

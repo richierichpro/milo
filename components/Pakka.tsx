@@ -4,11 +4,11 @@ import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState } from "react";
 import { DEMO_TRIP } from "@/lib/demo-trip";
 import type { StreamMessage } from "@/lib/messages";
-import { pointsFor, routesFor, type MapLine, type MapPoint } from "@/lib/map-points";
+import { pointsFor, routesFor } from "@/lib/map-points";
 import { averageCost } from "@/lib/money";
 import { readNdjson } from "@/lib/ndjson";
 import type { CandidatePool } from "@/lib/gather";
-import type { DestinationOption, Itinerary, SquadMatch as Match, TripInput } from "@/lib/types";
+import type { Itinerary, TripInput } from "@/lib/types";
 import { ArrivalTimeline } from "./ArrivalTimeline";
 import { ChatBox, type ChatTurn } from "./ChatBox";
 import { CostSplit } from "./CostSplit";
@@ -18,7 +18,6 @@ import { FlightsSection } from "./FlightsSection";
 import { HotelCard } from "./HotelCard";
 import { PlanHeader } from "./PlanHeader";
 import { ProgressFeed } from "./ProgressFeed";
-import { SquadMatch } from "./SquadMatch";
 import { TripForm } from "./TripForm";
 import { TripSummary } from "./TripSummary";
 import { WhatsAppButton } from "./WhatsAppButton";
@@ -40,7 +39,6 @@ export function Pakka() {
   const [chatting, setChatting] = useState(false);
   const [highlight, setHighlight] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string>();
-  const [match, setMatch] = useState<Match>();
 
   const run = useCallback(async (input: TripInput) => {
     setRunning(true);
@@ -52,10 +50,7 @@ export function Pakka() {
       await readNdjson<StreamMessage>(res, (msg) => {
         if (msg.type === "progress") setProgress((p) => [...p, msg.text]);
         else if (msg.type === "error") setError(msg.message);
-        else if (msg.type === "destinations") {
-          setMatch(msg.match);
-          setItinerary(undefined);
-        } else if (msg.type === "plan") {
+        else if (msg.type === "plan") {
           setItinerary(msg.itinerary);
           setPool(msg.pool);
           setTurns([]);
@@ -103,13 +98,7 @@ export function Pakka() {
 
   const makePlan = () => {
     setEditing(false);
-    if (!trip.destination.trim()) setMatch(undefined);
-    run({ ...trip, destinationAirport: undefined });
-  };
-  const pick = (o: DestinationOption) => {
-    const next = { ...trip, destination: o.destination.name, destinationAirport: o.destination.airportCode };
-    setTrip(next);
-    run(next);
+    run(trip);
   };
 
   const [activeDay, setActiveDay] = useState<number>();
@@ -123,12 +112,12 @@ export function Pakka() {
   // The map shows the hotel, plus only the day that's been picked.
   const points = useMemo(
     () =>
-      itinerary ? pointsFor(itinerary).filter((p) => p.day === undefined || p.day === activeDay) : match ? matchPoints(match) : [],
-    [itinerary, match, activeDay],
+      itinerary ? pointsFor(itinerary).filter((p) => p.day === undefined || p.day === activeDay) : [],
+    [itinerary, activeDay],
   );
   const lines = useMemo(
-    () => (itinerary ? routesFor(itinerary).filter((r) => r.day === activeDay) : match ? matchLines(match) : []),
-    [itinerary, match, activeDay],
+    () => (itinerary ? routesFor(itinerary).filter((r) => r.day === activeDay) : []),
+    [itinerary, activeDay],
   );
   /** Clicking a stop card shows that stop's day on the map, then flies to the stop. */
   const selectStop = (id: string) => {
@@ -141,7 +130,7 @@ export function Pakka() {
     <div className="grid flex-1 grid-cols-1 lg:min-h-0 lg:grid-cols-[minmax(320px,30%)_1fr_minmax(320px,32%)]">
       <aside className="space-y-5 border-line p-5 lg:overflow-y-auto lg:border-r">
         <h1 className="font-display text-4xl text-teal">Pakka</h1>
-        {editing || !(itinerary || match) ? (
+        {editing || !itinerary ? (
           <TripForm value={trip} onChange={setTrip} onSubmit={makePlan} busy={running} />
         ) : (
           <TripSummary trip={itinerary?.trip ?? trip} onEdit={() => setEditing(true)} />
@@ -154,11 +143,6 @@ export function Pakka() {
       <main className="space-y-6 p-5 lg:overflow-y-auto">
         {itinerary ? (
           <>
-            {match && (
-              <button type="button" className="text-sm font-semibold text-teal hover:underline" onClick={() => setItinerary(undefined)}>
-                ← Back to Squad Match
-              </button>
-            )}
             <PlanHeader itinerary={itinerary}>
               <WhatsAppButton itinerary={itinerary} />
             </PlanHeader>
@@ -193,9 +177,7 @@ export function Pakka() {
             />
             <CostSplit itinerary={itinerary} onAsk={chat} busy={chatting || running} />
           </>
-        ) : match ? (
-          <SquadMatch match={match} onPick={pick} busy={running} />
-        ) : (
+                ) : (
           <EmptyState running={running} />
         )}
       </main>
@@ -221,39 +203,10 @@ function EmptyState({ running }: { running: boolean }) {
         <p className="text-muted">
           {running
             ? "Every flight, hotel and place in your plan will come from these searches."
-            : "Add your friends and their home cities, pick a place or leave it empty for ideas, and press “Make it pakka”. Every flight, hotel, place and event comes from live Google results."}
+            : "Add your friends and their home cities, pick where you're going, and press “Make it pakka”. Every flight, hotel, place and event comes from live Google results."}
         </p>
       </div>
     </div>
-  );
-}
-
-const LINE_COLORS = ["#0f5257", "#e0603f", "#6b4c9a", "#2f855a", "#b83280", "#2b6cb0"];
-
-function matchPoints(m: Match): MapPoint[] {
-  const homes = m.homes
-    .filter((h) => h.lat !== undefined && h.lng !== undefined)
-    .map((h, i) => ({ id: `home:${h.person}`, lat: h.lat!, lng: h.lng!, label: h.person[0], color: LINE_COLORS[i % LINE_COLORS.length], title: `${h.person} · ${h.city}` }));
-  const dests = m.options
-    .filter((o) => o.destination.lat !== undefined && o.destination.lng !== undefined)
-    .map((o, i) => ({ id: o.destination.id, lat: o.destination.lat!, lng: o.destination.lng!, label: String(i + 1), color: "#f0a202", title: `#${i + 1} ${o.destination.name}` }));
-  return [...homes, ...dests];
-}
-
-function matchLines(m: Match): MapLine[] {
-  return m.homes.flatMap((h, i) =>
-    h.lat === undefined || h.lng === undefined
-      ? []
-      : m.options
-          .filter((o) => o.destination.lat !== undefined && o.destination.lng !== undefined)
-          .map((o) => ({
-            points: [
-              [h.lat!, h.lng!],
-              [o.destination.lat!, o.destination.lng!],
-            ] as [number, number][],
-            color: LINE_COLORS[i % LINE_COLORS.length],
-            dashed: true,
-          })),
   );
 }
 

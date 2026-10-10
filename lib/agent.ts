@@ -143,7 +143,7 @@ export async function editPlan(
   const receipts: CallLogEntry[] = [];
   const log = { log: receipts };
   const dest = trip.destination;
-  const destCodes = resolveAirport(dest)?.codes ?? trip.destinationAirport ?? "";
+  const destCodes = resolveAirport(dest)?.codes ?? "";
 
   const tools: Record<string, (input: Record<string, unknown>) => Promise<string>> = {
     async search_places(input) {
