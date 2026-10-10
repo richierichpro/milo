@@ -112,14 +112,29 @@ export function Pakka() {
     run(next);
   };
 
-  const points = useMemo(() => (itinerary ? pointsFor(itinerary) : match ? matchPoints(match) : []), [itinerary, match]);
-  const lines = useMemo(() => (itinerary ? routesFor(itinerary) : match ? matchLines(match) : []), [itinerary, match]);
   const [activeDay, setActiveDay] = useState<number>();
   const [playKey, setPlayKey] = useState(0);
   /** Show one day on the map and play its route (clicking it again replays). */
   const showDay = (i: number | undefined) => {
     setActiveDay(i);
     setPlayKey((k) => k + 1);
+  };
+
+  // The map shows the hotel, plus only the day that's been picked.
+  const points = useMemo(
+    () =>
+      itinerary ? pointsFor(itinerary).filter((p) => p.day === undefined || p.day === activeDay) : match ? matchPoints(match) : [],
+    [itinerary, match, activeDay],
+  );
+  const lines = useMemo(
+    () => (itinerary ? routesFor(itinerary).filter((r) => r.day === activeDay) : match ? matchLines(match) : []),
+    [itinerary, match, activeDay],
+  );
+  /** Clicking a stop card shows that stop's day on the map, then flies to the stop. */
+  const selectStop = (id: string) => {
+    const day = itinerary?.days.findIndex((d) => d.stops.some((s) => s.item.id === id));
+    if (day !== undefined && day >= 0 && day !== activeDay) showDay(day);
+    setSelectedId(id);
   };
 
   return (
@@ -177,7 +192,7 @@ export function Pakka() {
               highlightIds={highlight}
               activeDay={activeDay}
               onDayClick={(i) => showDay(activeDay === i ? undefined : i)}
-              onSelect={setSelectedId}
+              onSelect={selectStop}
             />
             <CostSplit itinerary={itinerary} onAsk={chat} busy={chatting || running} />
           </>
@@ -190,6 +205,11 @@ export function Pakka() {
 
       <section className="relative h-[360px] border-line lg:h-full lg:border-l">
         {itinerary && <DayButtons days={itinerary.days} active={activeDay} onPick={showDay} />}
+        {itinerary && activeDay === undefined && (
+          <p className="pointer-events-none absolute inset-x-0 top-14 z-[1100] mx-auto w-fit rounded-full bg-ink/80 px-3 py-1 text-sm text-white">
+            Tap a day to see its route
+          </p>
+        )}
         <TripMap points={points} lines={lines} selectedId={selectedId} activeDay={activeDay} playKey={playKey} onSelect={setSelectedId} />
       </section>
     </div>

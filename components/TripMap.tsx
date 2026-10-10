@@ -77,7 +77,9 @@ export default function TripMap({
     }
     const all: [number, number][] = [...points.map((p) => [p.lat, p.lng] as [number, number]), ...lines.flatMap((l) => l.points)];
     bounds.current = all.length ? L.latLngBounds(all) : null;
-    if (bounds.current) m.fitBounds(bounds.current, { padding: [30, 30], maxZoom: 13 });
+    // When a day is picked, the day animation does the zooming.
+    if (bounds.current && activeDay === undefined) m.fitBounds(bounds.current, { padding: [30, 30], maxZoom: 13 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refit only when the markers change, not on every day pick
   }, [points, lines, onSelect]);
 
   // Highlight one day: its markers stay bright, everything else fades, and the
