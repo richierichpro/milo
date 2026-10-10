@@ -140,10 +140,7 @@ export function Pakka() {
   return (
     <div className="grid flex-1 grid-cols-1 lg:min-h-0 lg:grid-cols-[minmax(320px,30%)_1fr_minmax(320px,32%)]">
       <aside className="space-y-5 border-line p-5 lg:overflow-y-auto lg:border-r">
-        <div>
-          <h1 className="font-display text-4xl text-teal">Pakka</h1>
-          <p className="text-muted">The Goa plan that actually happens.</p>
-        </div>
+        <h1 className="font-display text-4xl text-teal">Pakka</h1>
         {editing || !(itinerary || match) ? (
           <TripForm value={trip} onChange={setTrip} onSubmit={makePlan} busy={running} />
         ) : (
@@ -220,11 +217,11 @@ function EmptyState({ running }: { running: boolean }) {
   return (
     <div className="grid h-full min-h-[300px] place-items-center text-center">
       <div className="max-w-sm space-y-2">
-        <p className="font-display text-2xl text-teal">{running ? "Searching Google for real options…" : "Four friends. Four cities. One plan."}</p>
+        <p className="font-display text-2xl text-teal">{running ? "Searching Google for real options…" : "Your squad. Any cities. One plan."}</p>
         <p className="text-muted">
           {running
             ? "Every flight, hotel and place in your plan will come from these searches."
-            : "Fill in the squad and press “Make it pakka”. Every flight, hotel, place and event comes from live Google results."}
+            : "Add your friends and their home cities, pick a place or leave it empty for ideas, and press “Make it pakka”. Every flight, hotel, place and event comes from live Google results."}
         </p>
       </div>
     </div>

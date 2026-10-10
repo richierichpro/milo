@@ -8,7 +8,7 @@ const body = Hind({ variable: "--font-body", subsets: ["latin"], weight: ["400",
 
 export const metadata: Metadata = {
   title: "Pakka",
-  description: "The Goa plan that actually happens.",
+  description: "Group trips for friends in different cities, planned from live Google results.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
