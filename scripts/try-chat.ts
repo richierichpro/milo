@@ -16,7 +16,7 @@ async function main() {
   console.log(`  Day 1: ${it.days[0].stops.map((s) => `${s.time} ${s.kind === "place" ? s.item.name : s.item.title}`).join(" · ") || "(nothing)"}`);
   console.log(`  Hotel: ${it.hotel?.name}`);
   console.log(`Verified ${it.verification.verified}/${it.verification.total}${it.verification.removed.length ? ` · removed ${it.verification.removed.join(", ")}` : ""}`);
-  console.log(`Pakka: ${r.text}`);
+  console.log(`Milo: ${r.text}`);
   console.log(`Searches: ${r.receipts.length} (${r.receipts.filter((x) => x.source === "live").length} live)`);
   const kabir = it.flights.find((f) => f.person === "Kabir")?.out;
   if (request.startsWith("Kabir")) console.log(kabir && kabir.departTime.slice(11) >= "18:00" ? "PASS: Kabir departs after 18:00" : "FAIL: Kabir still departs before 18:00");

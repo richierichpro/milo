@@ -27,7 +27,7 @@ const TripMap = dynamic(() => import("./TripMap"), {
   loading: () => <div className="grid h-full place-items-center text-sm text-muted">Loading map…</div>,
 });
 
-export function Pakka() {
+export function Milo() {
   const [trip, setTrip] = useState<TripInput>(DEMO_TRIP);
   const [editing, setEditing] = useState(false);
   const [progress, setProgress] = useState<string[]>([]);
@@ -69,9 +69,9 @@ export function Pakka() {
     if (!itinerary || !pool) return;
     const before = itinerary;
     setChatting(true);
-    setTurns((t) => [...t, { role: "user", text }, { role: "pakka", text: "", tools: ["Thinking…"], pending: true }]);
-    const updateLast = (f: (t: Extract<ChatTurn, { role: "pakka" }>) => Extract<ChatTurn, { role: "pakka" }>) =>
-      setTurns((ts) => ts.map((t, i) => (i === ts.length - 1 && t.role === "pakka" ? f(t) : t)));
+    setTurns((t) => [...t, { role: "user", text }, { role: "milo", text: "", tools: ["Thinking…"], pending: true }]);
+    const updateLast = (f: (t: Extract<ChatTurn, { role: "milo" }>) => Extract<ChatTurn, { role: "milo" }>) =>
+      setTurns((ts) => ts.map((t, i) => (i === ts.length - 1 && t.role === "milo" ? f(t) : t)));
     try {
       const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ itinerary, pool, message: text }) });
       if (!res.ok && res.headers.get("content-type")?.includes("json")) throw new Error((await res.json()).error);
@@ -129,7 +129,7 @@ export function Pakka() {
   return (
     <div className="grid flex-1 grid-cols-1 lg:min-h-0 lg:grid-cols-[minmax(320px,30%)_1fr_minmax(320px,32%)]">
       <aside className="space-y-5 border-line p-5 lg:overflow-y-auto lg:border-r">
-        <h1 className="font-display text-4xl text-teal">Pakka</h1>
+        <h1 className="font-display text-4xl text-teal">Milo</h1>
         {editing || !itinerary ? (
           <TripForm value={trip} onChange={setTrip} onSubmit={makePlan} busy={running} />
         ) : (
@@ -203,7 +203,7 @@ function EmptyState({ running }: { running: boolean }) {
         <p className="text-muted">
           {running
             ? "Every flight, hotel and place in your plan will come from these searches."
-            : "Add your friends and their home cities, pick where you're going, and press “Make it pakka”. Every flight, hotel, place and event comes from live Google results."}
+            : "Add your friends and their home cities, pick where you're going, and press “Plan our trip”. Every flight, hotel, place and event comes from live Google results."}
         </p>
       </div>
     </div>

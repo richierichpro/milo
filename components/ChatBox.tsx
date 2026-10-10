@@ -6,7 +6,7 @@ import { friendlyStep } from "./ProgressFeed";
 
 export type ChatTurn =
   | { role: "user"; text: string }
-  | { role: "pakka"; text: string; tools: string[]; delta?: number; pending?: boolean; error?: boolean };
+  | { role: "milo"; text: string; tools: string[]; delta?: number; pending?: boolean; error?: boolean };
 
 const SUGGESTIONS = ["Make it cheaper", "Kabir can't leave Delhi before 6pm Friday", "Add a sunset cruise", "Make day 2 more adventurous"];
 
@@ -70,7 +70,7 @@ export function ChatBox({ turns, busy, onSend }: { turns: ChatTurn[]; busy: bool
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={busy}
-          placeholder="Ask Pakka to change something…"
+          placeholder="Ask Milo to change something…"
           className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-teal disabled:opacity-60"
         />
         <button disabled={busy || !text.trim()} className="rounded-xl bg-teal px-4 text-sm font-semibold text-white disabled:opacity-50">

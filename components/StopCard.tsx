@@ -76,7 +76,7 @@ export function StopCard({
         </p>
         {stop.why && (
           <p className="mt-1 text-sm text-ink/80">
-            <span className="text-teal">Pakka&apos;s note:</span> {stop.why}
+            <span className="text-teal">Milo&apos;s note:</span> {stop.why}
           </p>
         )}
         <div className="mt-2 flex flex-wrap gap-2">

@@ -1,6 +1,6 @@
-# Pakka
+# Milo
 
-**The group trip that actually happens: friends in different cities pick a place, and Pakka lines up flights so everyone lands together, splits the cost, and builds a plan where every flight, hotel, place and event is a real Google result.**
+**The group trip that actually happens: friends in different cities pick a place, and Milo lines up flights so everyone lands together, splits the cost, and builds a plan where every flight, hotel, place and event is a real Google result.**
 
 Built for the SerpApi India Hackathon 2026 · Travel & Local Discovery.
 
@@ -10,9 +10,9 @@ Every friend group has a "Goa trip 🌴" WhatsApp group. It fills up with "chalo
 
 AI trip planners don't fix this. They plan for one traveller, and they make things up: restaurants that closed, hotels at prices from last year. Even polished ones go stale. Layla's public sample trip, for example, shows a flight price that has long since expired. A plan you can't trust is just another chat message.
 
-## What Pakka does
+## What Milo does
 
-1. **Land together.** Enter each friend's home city, the destination, dates and a budget. For that place, Pakka searches Google Flights for every person, both ways, keeps every nonstop plus the cheapest options, and tries every combination. Each combination is scored on price plus penalties for arriving far apart, landing at a different airport from the others (Goa's GOI and GOX are 1.5–2 h apart), slow flights and stops. All of these are in one place: [lib/land-together.ts](lib/land-together.ts). The plan shows the result plainly ("Everyone lands between 18:25 and 21:15 at GOI"), or says who is split off.
+1. **Land together.** Enter each friend's home city, the destination, dates and a budget. For that place, Milo searches Google Flights for every person, both ways, keeps every nonstop plus the cheapest options, and tries every combination. Each combination is scored on price plus penalties for arriving far apart, landing at a different airport from the others (Goa's GOI and GOX are 1.5–2 h apart), slow flights and stops. All of these are in one place: [lib/land-together.ts](lib/land-together.ts). The plan shows the result plainly ("Everyone lands between 18:25 and 21:15 at GOI"), or says who is split off.
 2. **A grounded day-by-day plan.** Claude arranges hotels, places and events, but it can only pick from what search returned. Code checks every item against the search results and removes anything else. Claude is steered to a hotel near the plan and is asked to reconsider once if the hotel ends up more than 10 km from most stops. The plan also includes:
    - a map route for each day (click a day to focus it) and "≈ N km today" under each day;
    - a cost split with an over-budget callout ("Kabir is ₹1,649 over budget" with a one-tap "Find Kabir cheaper flights") and an equal-split view showing who pays whom;
@@ -50,7 +50,7 @@ flowchart LR
 
 ## SerpApi engines used
 
-| Engine | What Pakka uses it for |
+| Engine | What Milo uses it for |
 |---|---|
 | `google_flights` | One-way flights per person and direction (`type=2`, `adults=1`), plus time windows (`outbound_times`) and nonstop filters for chat edits |
 | `google_hotels` | Hotels for the group (2 adults per room), sorted by rating or price, with price caps for "make it cheaper" |
@@ -65,15 +65,15 @@ All calls go through [lib/serpapi.ts](lib/serpapi.ts), which caches every respon
 You need Node 20 or newer.
 
 ```bash
-git clone <this repo> pakka
-cd pakka
+git clone <this repo> milo
+cd milo
 npm install
 cp .env.example .env.local
 ```
 
 ### Option A: demo mode (no API keys)
 
-The repo includes a recorded real run in `demo-data/`, covering real SerpApi responses and Claude's answers. With no keys in `.env.local`, Pakka uses it automatically:
+The repo includes a recorded real run in `demo-data/`, covering real SerpApi responses and Claude's answers. With no keys in `.env.local`, Milo uses it automatically:
 
 ```bash
 npm run dev
@@ -81,10 +81,10 @@ npm run dev
 
 Open http://localhost:3000. A banner says "Demo mode · real search data recorded on …". These work fully:
 
-- The form opens with the demo squad going to **Goa**. Press **Make it pakka**.
+- The form opens with the demo squad going to **Goa**. Press **Plan our trip**.
 - Then try the four suggestion chips under "Change anything", and the "Find … cheaper flights" buttons on the cost split.
 
-Other trips and free-text edits need API keys. Pakka says so instead of making something up.
+Other trips and free-text edits need API keys. Milo says so instead of making something up.
 
 ### Option B: live
 
@@ -132,5 +132,5 @@ components/          UI
 
 - Date flexibility: price the trip ±3 days and suggest "leave Thursday, save ₹11,400 for the squad".
 - Trains and buses (IRCTC, redBus) for friends who live within a few hours.
-- A shareable link with a vote on the plan, so the WhatsApp group can say "pakka" in one tap.
+- A shareable link with a vote on the plan, so the WhatsApp group can say yes in one tap.
 - Re-checking prices automatically the day before booking, flagging anything that changed.

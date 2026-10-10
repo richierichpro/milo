@@ -1,10 +1,10 @@
-# Pakka: the group trip planner that can't make things up
+# Milo (formerly Pakka): the group trip planner that can't make things up
 
 ## The project
 Hackathon entry for the SerpApi India Hackathon 2026, track "Travel & Local Discovery". Deadline Oct 10, 2026, 23:59 IST. Judged on idea strength, originality, technical complexity, usefulness and meaningful SerpApi usage. The demo video shows it running locally, so it only needs to run on localhost.
 
-Pakka is an AI trip planner laid out like Layla.ai (chat on the left, trip plan in the middle, map on the right), with two things that set it apart:
-1. Squad Trip (the hero feature). Friends live in different Indian cities. The squad picks the destination (required; Squad Match was removed on 2026-10-10 at the user's request). Pakka picks flights so everyone lands within about an hour of each other, picks a hotel for the group, builds the day-by-day plan and splits the cost per person.
+Milo is an AI trip planner laid out like Layla.ai (chat on the left, trip plan in the middle, map on the right), with two things that set it apart:
+1. Squad Trip (the hero feature). Friends live in different Indian cities. Renamed from Pakka to Milo on 2026-10-10; the planner prompt in lib/planner.ts still says "Pakka" on purpose, because changing it would invalidate the recorded demo answers. The squad picks the destination (required; Squad Match was removed on 2026-10-10 at the user's request). Milo picks flights so everyone lands within about an hour of each other, picks a hotel for the group, builds the day-by-day plan and splits the cost per person.
 2. Grounded, never invented. Every flight, hotel, place and event in a plan is a real SerpApi search result. Claude chooses and arranges items from search results. It never writes its own places, prices, ratings or times.
 
 ## Rules that always apply

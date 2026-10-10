@@ -106,7 +106,7 @@ export function TripForm({
         disabled={busy}
         className="w-full rounded-2xl bg-teal px-4 py-3 font-display text-lg text-white shadow-sm transition hover:bg-teal/90 disabled:opacity-60"
       >
-        {busy ? "Making it pakka…" : "Make it pakka"}
+        {busy ? "Planning your trip…" : "Plan our trip"}
       </button>
     </form>
   );

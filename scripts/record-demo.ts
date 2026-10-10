@@ -1,4 +1,4 @@
-// Records one full demo run into demo-data/ so Pakka works without API keys.
+// Records one full demo run into demo-data/ so Milo works without API keys.
 // Run with real keys: npm run record:demo
 import { mkdir, writeFile } from "node:fs/promises";
 import { editPlan } from "../lib/agent";

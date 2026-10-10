@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { Pakka } from "@/components/Pakka";
+import { Milo } from "@/components/Milo";
 import { isClaudeDemo } from "@/lib/claude";
 import { isDemoMode } from "@/lib/serpapi";
 
@@ -24,7 +24,7 @@ export default async function Home() {
           Demo mode · real search data recorded on {(await recordedOn()) ?? "an earlier run"}
         </div>
       )}
-      <Pakka />
+      <Milo />
     </div>
   );
 }

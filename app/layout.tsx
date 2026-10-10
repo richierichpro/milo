@@ -7,7 +7,7 @@ const heading = Rozha_One({ variable: "--font-heading", subsets: ["latin"], weig
 const body = Hind({ variable: "--font-body", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: "Pakka",
+  title: "Milo",
   description: "Group trips for friends in different cities, planned from live Google results.",
 };
 

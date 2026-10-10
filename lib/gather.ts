@@ -23,7 +23,7 @@ export async function gatherCandidates(input: TripInput, onProgress?: (text: str
   const errors: string[] = [];
   const dest = input.destination.trim();
   const destAirport = resolveAirport(dest);
-  if (!destAirport) throw new Error(`Pakka doesn't know the airport for "${dest}" yet.`);
+  if (!destAirport) throw new Error(`Milo doesn't know the airport for "${dest}" yet.`);
 
   const run = async <T>(label: string, params: SerpParams, parse: (json: any) => T, empty: T): Promise<T> => {
     onProgress?.(`Searching ${label}…`);

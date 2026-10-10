@@ -2,7 +2,7 @@
 # In the Render dashboard: New → Blueprint → pick this repo, then paste the two API keys when asked.
 services:
   - type: web
-    name: pakka
+    name: milo
     runtime: node
     plan: free
     buildCommand: npm ci && npm run build

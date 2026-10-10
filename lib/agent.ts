@@ -287,7 +287,7 @@ export async function editPlan(
     if (done) return done;
     messages.push({ role: "user", content: results });
   }
-  throw new Error("Pakka couldn't finish this edit. Try asking a bit more simply.");
+  throw new Error("Milo couldn't finish this edit. Try asking a bit more simply.");
 }
 
 /** Facts about what changed, written by code from the two plans. */
