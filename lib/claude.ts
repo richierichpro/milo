@@ -56,7 +56,8 @@ async function create(params: CreateParams): Promise<Anthropic.Message> {
     return recorded;
   }
   const file = path.join(CACHE_DIR, `${hash(params)}.json`);
-  let res = await readJson<Anthropic.Message>(file);
+  // As with searches, a recorded answer to the same request is reused before calling the API.
+  let res = (await readJson<Anthropic.Message>(file)) ?? (await readJson<Anthropic.Message>(demoFile));
   if (!res) {
     res = await getClient().messages.create(params);
     if (res.stop_reason !== "refusal") await writeJson(file, res);

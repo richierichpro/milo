@@ -1,0 +1,21 @@
+# Render Blueprint: one free Node web service.
+# In the Render dashboard: New → Blueprint → pick this repo, then paste the two API keys when asked.
+services:
+  - type: web
+    name: pakka
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: CLAUDE_MODEL
+        value: claude-haiku-5-5
+      - key: DEMO_MODE
+        value: "false"
+      - key: SERPAPI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false

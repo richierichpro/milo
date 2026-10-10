@@ -94,7 +94,9 @@ export async function serpSearch(params: SerpParams, opts?: { log?: CallLogEntry
   }
 
   const cacheFile = cachePath(params);
-  const cached = await readJson(cacheFile);
+  // A fresh server (e.g. a deploy) has no .cache yet; the committed demo
+  // recordings are real responses too, so use them before paying for a search.
+  const cached = (await readJson(cacheFile)) ?? (await readJson(cachePath(params, true)));
   if (cached) {
     checkError(engine, cached);
     await recordForDemo(params, cached);
