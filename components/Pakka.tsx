@@ -8,7 +8,7 @@ import { pointsFor, routesFor, type MapLine, type MapPoint } from "@/lib/map-poi
 import { averageCost } from "@/lib/money";
 import { readNdjson } from "@/lib/ndjson";
 import type { CandidatePool } from "@/lib/gather";
-import type { CallLogEntry, DestinationOption, Itinerary, SquadMatch as Match, TripInput } from "@/lib/types";
+import type { DestinationOption, Itinerary, SquadMatch as Match, TripInput } from "@/lib/types";
 import { ArrivalTimeline } from "./ArrivalTimeline";
 import { ChatBox, type ChatTurn } from "./ChatBox";
 import { CostSplit } from "./CostSplit";
@@ -18,7 +18,6 @@ import { FlightsSection } from "./FlightsSection";
 import { HotelCard } from "./HotelCard";
 import { PlanHeader } from "./PlanHeader";
 import { ProgressFeed } from "./ProgressFeed";
-import { ReceiptsDrawer, receiptsSummary } from "./ReceiptsDrawer";
 import { SquadMatch } from "./SquadMatch";
 import { TripForm } from "./TripForm";
 import { TripSummary } from "./TripSummary";
@@ -36,8 +35,6 @@ export function Pakka() {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string>();
   const [itinerary, setItinerary] = useState<Itinerary>();
-  const [receipts, setReceipts] = useState<CallLogEntry[]>([]);
-  const [receiptsOpen, setReceiptsOpen] = useState(false);
   const [pool, setPool] = useState<CandidatePool>();
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [chatting, setChatting] = useState(false);
@@ -45,8 +42,7 @@ export function Pakka() {
   const [selectedId, setSelectedId] = useState<string>();
   const [match, setMatch] = useState<Match>();
 
-  const run = useCallback(async (input: TripInput, fresh: boolean) => {
-    if (fresh) setReceipts([]);
+  const run = useCallback(async (input: TripInput) => {
     setRunning(true);
     setError(undefined);
     setProgress([]);
@@ -59,10 +55,8 @@ export function Pakka() {
         else if (msg.type === "destinations") {
           setMatch(msg.match);
           setItinerary(undefined);
-          setReceipts((r) => [...r, ...msg.receipts]);
         } else if (msg.type === "plan") {
           setItinerary(msg.itinerary);
-          setReceipts((r) => [...r, ...msg.receipts]);
           setPool(msg.pool);
           setTurns([]);
           setSelectedId(undefined);
@@ -93,7 +87,6 @@ export function Pakka() {
         else if (msg.type === "plan") {
           setItinerary(msg.itinerary);
           setPool(msg.pool);
-          setReceipts((r) => [...r, ...msg.receipts]);
           updateLast((t) => ({ ...t, delta: averageCost(msg.itinerary.costs) - averageCost(before.costs) }));
           const changed = changedIds(before, msg.itinerary);
           setHighlight(changed);
@@ -111,12 +104,12 @@ export function Pakka() {
   const makePlan = () => {
     setEditing(false);
     if (!trip.destination.trim()) setMatch(undefined);
-    run({ ...trip, destinationAirport: undefined }, true);
+    run({ ...trip, destinationAirport: undefined });
   };
   const pick = (o: DestinationOption) => {
     const next = { ...trip, destination: o.destination.name, destinationAirport: o.destination.airportCode };
     setTrip(next);
-    run(next, false);
+    run(next);
   };
 
   const points = useMemo(() => (itinerary ? pointsFor(itinerary) : match ? matchPoints(match) : []), [itinerary, match]);
@@ -141,7 +134,7 @@ export function Pakka() {
         ) : (
           <TripSummary trip={itinerary?.trip ?? trip} onEdit={() => setEditing(true)} />
         )}
-        <ProgressFeed lines={progress} running={running} receipts={receipts} />
+        <ProgressFeed lines={progress} running={running} />
         {error && <p className="rounded-2xl bg-coral/10 p-3 text-sm text-coral">{error}</p>}
         {itinerary && <ChatBox turns={turns} busy={chatting || running} onSend={chat} />}
       </aside>
@@ -156,13 +149,6 @@ export function Pakka() {
             )}
             <PlanHeader itinerary={itinerary}>
               <WhatsAppButton itinerary={itinerary} />
-              <button
-                type="button"
-                onClick={() => setReceiptsOpen(true)}
-                className="rounded-full border border-line bg-white px-3 py-1 text-sm hover:border-teal"
-              >
-                🧾 {receiptsSummary(receipts)}
-              </button>
             </PlanHeader>
             {pool && pool.errors.length > 0 && (
               <div className="rounded-2xl border border-marigold/50 bg-marigold-soft p-3 text-sm">
@@ -202,7 +188,6 @@ export function Pakka() {
         )}
       </main>
 
-      <ReceiptsDrawer receipts={receipts} open={receiptsOpen} onClose={() => setReceiptsOpen(false)} />
       <section className="relative h-[360px] border-line lg:h-full lg:border-l">
         {itinerary && <DayButtons days={itinerary.days} active={activeDay} onPick={showDay} />}
         <TripMap points={points} lines={lines} selectedId={selectedId} activeDay={activeDay} playKey={playKey} onSelect={setSelectedId} />

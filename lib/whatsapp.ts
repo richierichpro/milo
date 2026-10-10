@@ -26,6 +26,6 @@ export function whatsappText(it: Itinerary): string {
     const top = d.stops[0];
     lines.push(`Day ${i + 1} (${dayLabel(d.date)}): ${d.title}${top ? ` — starts with ${top.kind === "place" ? top.item.name : top.item.title} at ${top.time}` : ""}`);
   });
-  lines.push("", "Pakka? 🔥 (prices from Google search, checked just now)");
+  lines.push("", "Pakka? 🔥");
   return lines.join("\n");
 }

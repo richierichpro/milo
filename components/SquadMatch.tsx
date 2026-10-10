@@ -3,7 +3,6 @@
 import { formatINR } from "@/lib/money";
 import type { DestinationOption, SquadMatch as Match } from "@/lib/types";
 import { Photo } from "./Photo";
-import { ProofLine } from "./ProofLine";
 
 export function SquadMatch({ match, onPick, busy }: { match: Match; onPick: (o: DestinationOption) => void; busy: boolean }) {
   return (
@@ -52,7 +51,6 @@ export function SquadMatch({ match, onPick, busy }: { match: Match; onPick: (o: 
                     </span>
                   ))}
                 </p>
-                <ProofLine source={o.destination.source} extra="estimate" />
               </div>
             </button>
           );

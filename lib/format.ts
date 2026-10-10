@@ -1,24 +1,5 @@
 // Client-safe display helpers.
 
-const ENGINE_LABELS: Record<string, string> = {
-  google_maps: "Google Maps",
-  google_hotels: "Google Hotels",
-  google_flights: "Google Flights",
-  google: "Google Events",
-  google_travel_explore: "Google Travel Explore",
-};
-
-export const engineLabel = (engine: string) => ENGINE_LABELS[engine] ?? engine;
-
-export function timeAgo(iso: string, now: number): string {
-  const min = Math.max(0, Math.round((now - Date.parse(iso)) / 60_000));
-  if (min < 1) return "just now";
-  if (min < 60) return `${min} min ago`;
-  const h = Math.round(min / 60);
-  if (h < 48) return `${h} h ago`;
-  return `${Math.round(h / 24)} days ago`;
-}
-
 /** "2026-11-20" → "Fri 20 Nov" */
 export function dayLabel(date: string): string {
   const d = new Date(`${date}T00:00:00Z`);

@@ -26,8 +26,7 @@ AI trip planners don't fix this. They plan for one traveller, and they make thin
 > - `docs/squad-match.png`: ranked destinations with lines from each friend's city
 > - `docs/plan.png`: arrival timeline, flights, hotel, day timeline and map
 > - `docs/chat.png`: a chat edit with search lines and the cost pill
-> - `docs/receipts.png`: the search receipts drawer
-
+> 
 ## How it works
 
 ```mermaid
@@ -52,7 +51,7 @@ flowchart LR
 - drops any sentence of Claude's own text that states a number or price, so its short notes can't pass as facts;
 - shows "✓ N/N verified with live Google data", with how many suggestions were removed.
 
-**Proof on every card.** Each flight, hotel, place and event shows where it came from and when ("Google Maps · checked 3 min ago ↗"), with a link to the source. The **search receipts** drawer lists every SerpApi call behind the plan, with its engine, query, live/cache/demo source and time taken.
+**Book from the plan.** Every flight has a Book button (Google Flights for that route and date), the hotel links to its booking page, attractions link to official tickets or bookable tours where Google lists them (e.g. "Book tickets ₹250" for Fort Aguada), events link to tickets, and every place has Directions.
 
 ## SerpApi engines used
 
@@ -65,7 +64,7 @@ flowchart LR
 | `google_maps` place details (`place_id`) | Entry ticket prices (e.g. Fort Aguada ₹250, official ASI site), bookable tours and typical spend, but only for the stops in the final plan; beaches and already-priced restaurants are skipped |
 | `google` (`events_results`) | Events in the city, kept only when they fall on the trip dates |
 
-All calls go through [lib/serpapi.ts](lib/serpapi.ts), which caches every response on disk, supports demo mode and logs the receipts. A full squad plan uses about 16 searches plus about 10 price lookups. A Squad Match adds about 10.
+All calls go through [lib/serpapi.ts](lib/serpapi.ts), which caches every response on disk and supports demo mode. A full squad plan uses about 16 searches plus about 10 price lookups. A Squad Match adds about 10.
 
 ## Run it
 
@@ -127,7 +126,7 @@ Then run `npm run dev`. Searches and Claude answers are cached in `.cache/`, so 
 - No database and no login. The plan lives in the browser.
 
 ```
-lib/serpapi.ts       the only SerpApi client (cache, demo, receipts)
+lib/serpapi.ts       the only SerpApi client (cache, demo)
 lib/normalize.ts     raw JSON → Flight / Hotel / Place / Event / Destination
 lib/gather.ts        all searches for a trip, in parallel
 lib/squad.ts         Squad Match (Travel Explore × each city + hotel prices)

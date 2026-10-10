@@ -4,7 +4,7 @@ import { clock, duration, stopsLabel } from "@/lib/format";
 import { formatINR } from "@/lib/money";
 import type { Flight, FlightPick } from "@/lib/types";
 import { Photo } from "./Photo";
-import { ProofLine } from "./ProofLine";
+import { BookButton } from "./BookButton";
 
 function Leg({ f, label }: { f?: Flight; label: string }) {
   if (!f) return <p className="text-sm text-muted">{label}: couldn&apos;t check this</p>;
@@ -22,6 +22,7 @@ function Leg({ f, label }: { f?: Flight; label: string }) {
         <span className="hidden sm:inline"> · {f.airline}</span>
       </span>
       <span className="ml-auto font-semibold">{formatINR(f.pricePerPerson)}</span>
+      <BookButton href={f.source.url}>Book</BookButton>
     </div>
   );
 }
@@ -45,7 +46,6 @@ export function FlightsSection({ flights, destination, highlightIds }: { flights
             </p>
             <Leg f={p.out} label="Out" />
             <Leg f={p.back} label="Back" />
-            {p.out && <ProofLine source={p.out.source} extra={`${p.out.flightNumbers.join(", ")}`} />}
           </div>
         ))}
       </div>
