@@ -4,6 +4,8 @@
 
 Built for the SerpApi India Hackathon 2026 · Travel & Local Discovery.
 
+**▶ Live app: [milo-858q.onrender.com](https://milo-858q.onrender.com/)** (free hosting: the first visit after a while takes about a minute to wake up; try the pre-filled Goa trip)
+
 ## The problem
 
 Every friend group has a "Goa trip 🌴" WhatsApp group. It fills up with "chalo!" and then nothing happens, because four people in four cities can't line up flights, dates and money. Someone opens four airline tabs, someone else finds a hotel nobody can afford, and the trip quietly dies.
