@@ -1,18 +1,11 @@
 import { dayLabel, DAY_COLORS } from "@/lib/format";
 import type { Day } from "@/lib/types";
 
-/** "All · Day 1 · Day 2 …" over the map. Clicking a day plays its route. */
-export function DayButtons({ days, active, onPick }: { days: Day[]; active?: number; onPick: (i: number | undefined) => void }) {
+/** "Day 1 · Day 2 …" over the map. Clicking a day plays its route. */
+export function DayButtons({ days, active, onPick }: { days: Day[]; active?: number; onPick: (i: number) => void }) {
   const base = "shrink-0 rounded-full border px-3 py-1 text-sm font-semibold shadow-sm transition";
   return (
     <div className="absolute inset-x-2 top-2 z-[1100] flex gap-2 overflow-x-auto pb-1" role="toolbar" aria-label="Show a day on the map">
-      <button
-        type="button"
-        onClick={() => onPick(undefined)}
-        className={`${base} ${active === undefined ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}
-      >
-        All days
-      </button>
       {days.map((d, i) => {
         const color = DAY_COLORS[i % DAY_COLORS.length];
         const on = active === i;
